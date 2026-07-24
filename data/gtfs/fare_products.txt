@@ -1,0 +1,101 @@
+fare_product_id,fare_product_name,fare_media_id,amount,currency
+gk_bo_shrici_t,Otobüs Tam Gaziantep Kart,gaziantepkart,21.00,TRY
+gk_bo_shrici_i,Otobüs İndirimli Gaziantep Kart,gaziantepkart,18.00,TRY
+gk_bo_shrici_o,Otobüs Öğrenci Gaziantep Kart,gaziantepkart,10.00,TRY
+gk_trm_t,Tramvay Tam Gaziantep Kart,gaziantepkart,21.00,TRY
+gk_trm_i,Tramvay İndirimli Gaziantep Kart,gaziantepkart,18.00,TRY
+gk_trm_o,Tramvay Öğrenci Gaziantep Kart,gaziantepkart,10.00,TRY
+gk_gzry_t,Gaziray Tam Gaziantep Kart,gaziantepkart,14.00,TRY
+gk_gzry_i,Gaziray İndirimli Gaziantep Kart,gaziantepkart,11.70,TRY
+gk_gzry_o,Gaziray Öğrenci Gaziantep Kart,gaziantepkart,6.30,TRY
+gk_oho_shrici_t,Özel Halk Otobüsü Tam Gaziantep Kart,gaziantepkart,21.00,TRY
+gk_oho_shrici_mavi_t,Özel Halk Otobüsü Tam Gaziantep Kart,gaziantepkart,21.00,TRY
+gk_oho_shrici_i,Özel Halk Otobüsü İndirimli Gaziantep Kart,gaziantepkart,18.00,TRY
+gk_oho_shrici_o,Özel Halk Otobüsü Öğrenci Gaziantep Kart,gaziantepkart,10.00,TRY
+gk_oho_baspinar_t,Özel Halk Otobüsü Başpınar Tam Gaziantep Kart,gaziantepkart,27.25,TRY
+gk_oho_baspinar_i,Özel Halk Otobüsü Başpınar İndirimli Gaziantep Kart,gaziantepkart,23.40,TRY
+gk_oho_baspinar_o,Özel Halk Otobüsü Başpınar Öğrenci Gaziantep Kart,gaziantepkart,10.00,TRY
+gk_bo_kirsal_t,Kırsal Otobüs Tam Gaziantep Kart,gaziantepkart,44.50,TRY
+gk_bo_kirsal_i,Kırsal Otobüs İndirimli Gaziantep Kart,gaziantepkart,31.00,TRY
+gk_bo_kirsal_o,Kırsal Otobüs Öğrenci Gaziantep Kart,gaziantepkart,13.10,TRY
+gk_nizip_shrici_t,Nizip Tam Gaziantep Kart,gaziantepkart,18.00,TRY
+gk_nizip_shrici_i,Nizip İndirimli Gaziantep Kart,gaziantepkart,14.00,TRY
+gk_nizip_shrici_o,Nizip Öğrenci Gaziantep Kart,gaziantepkart,10.00,TRY
+gk_nizip_konteyner_t,Nizip Konteyner Tam Kent Gaziantep Kart,gaziantepkart,20.50,TRY
+gk_nizip_konteyner_i,Nizip Konteyner İndirimli Kent Gaziantep Kart,gaziantepkart,16.50,TRY
+gk_nizip_konteyner_o,Nizip Konteyner Öğrenci Kent Gaziantep Kart,gaziantepkart,10.00,TRY
+gk_islahiye_oho_t,İslahiye Şehiriçi Tam Gaziantep Kart,gaziantepkart,18.00,TRY
+gk_islahiye_oho_i,İslahiye Şehiriçi İndirimli Gaziantep Kart,gaziantepkart,14.00,TRY
+gk_islahiye_oho_o,İslahiye Şehiriçi Öğrenci Gaziantep Kart,gaziantepkart,10.00,TRY
+gk_bld_ring_t,Belediye Ring Tam Gaziantep Kart,gaziantepkart,11.00,TRY
+gk_bld_ring_o,Belediye Ring Öğrenci Gaziantep Kart,gaziantepkart,4.50,TRY
+mfnc_bo_shrici_t,Otobüs Tam Mobil Uygulama NFC,mobilnfc,21.00,TRY
+mfnc_bo_shrici_i,Otobüs İndirimli Mobil Uygulama NFC,mobilnfc,18.00,TRY
+mfnc_bo_shrici_o,Otobüs Öğrenci Mobil Uygulama NFC,mobilnfc,10.00,TRY
+mfnc_trm_t,Tramvay Tam Mobil Uygulama NFC,mobilnfc,21.00,TRY
+mfnc_trm_i,Tramvay İndirimli Mobil Uygulama NFC,mobilnfc,18.00,TRY
+mfnc_trm_o,Tramvay Öğrenci Mobil Uygulama NFC,mobilnfc,10.00,TRY
+mfnc_gzry_t,Gaziray Tam Mobil Uygulama NFC,mobilnfc,14.00,TRY
+mfnc_gzry_i,Gaziray İndirimli Mobil Uygulama NFC,mobilnfc,11.70,TRY
+mfnc_gzry_o,Gaziray Öğrenci Mobil Uygulama NFC,mobilnfc,6.30,TRY
+mfnc_oho_shrici_t,Özel Halk Otobüsü Tam Mobil Uygulama NFC,mobilnfc,21.00,TRY
+mfnc_oho_shrici_i,Özel Halk Otobüsü İndirimli Mobil Uygulama NFC,mobilnfc,18.00,TRY
+mfnc_oho_shrici_o,Özel Halk Otobüsü Öğrenci Mobil Uygulama NFC,mobilnfc,10.00,TRY
+mfnc_oho_baspinar_t,Özel Halk Otobüsü Başpınar Tam Mobil Uygulama NFC,mobilnfc,27.25,TRY
+mfnc_oho_baspinar_i,Özel Halk Otobüsü Başpınar İndirimli Mobil Uygulama NFC,mobilnfc,23.40,TRY
+mfnc_oho_baspinar_o,Özel Halk Otobüsü Başpınar Öğrenci Mobil Uygulama NFC,mobilnfc,10.00,TRY
+mfnc_bo_kirsal_t,Kırsal Otobüs Tam Mobil Uygulama NFC,mobilnfc,44.50,TRY
+mfnc_bo_kirsal_i,Kırsal Otobüs İndirimli Mobil Uygulama NFC,mobilnfc,31.00,TRY
+mfnc_bo_kirsal_o,Kırsal Otobüs Öğrenci Mobil Uygulama NFC,mobilnfc,13.10,TRY
+mfnc_nizip_shrici_t,Nizip Tam Mobil Uygulama NFC,mobilnfc,18.00,TRY
+mfnc_nizip_shrici_i,Nizip İndirimli Mobil Uygulama NFC,mobilnfc,14.00,TRY
+mfnc_nizip_shrici_o,Nizip Öğrenci Mobil Uygulama NFC,mobilnfc,10.00,TRY
+mfnc_nizip_konteyner_t,Nizip Konteyner Tam Kent Mobil Uygulama NFC,mobilnfc,20.50,TRY
+mfnc_nizip_konteyner_i,Nizip Konteyner İndirimli Kent Mobil Uygulama NFC,mobilnfc,16.50,TRY
+mfnc_nizip_konteyner_o,Nizip Konteyner Öğrenci Kent Mobil Uygulama NFC,mobilnfc,10.00,TRY
+mfnc_islahiye_oho_t,İslahiye Şehiriçi Tam Mobil Uygulama NFC,mobilnfc,18.00,TRY
+mfnc_islahiye_oho_i,İslahiye Şehiriçi İndirimli Mobil Uygulama NFC,mobilnfc,14.00,TRY
+mfnc_islahiye_oho_o,İslahiye Şehiriçi Öğrenci Mobil Uygulama NFC,mobilnfc,10.00,TRY
+mfnc_bld_ring_t,Belediye Ring Tam Mobil Uygulama NFC,mobilnfc,11.00,TRY
+mfnc_bld_ring_o,Belediye Ring Öğrenci Mobil Uygulama NFC,mobilnfc,4.50,TRY
+debit_bo_shrici_t,Otobüs Tam Temassız Kart,debit,22.40,TRY
+debit_bo_shrici_i,Otobüs İndirimli Temassız Kart,debit,19.20,TRY
+debit_bo_shrici_o,Otobüs Öğrenci Temassız Kart,debit,10.70,TRY
+debit_trm_t,Tramvay Tam Temassız Kart,debit,22.40,TRY
+debit_trm_i,Tramvay İndirimli Temassız Kart,debit,19.20,TRY
+debit_trm_o,Tramvay Öğrenci Temassız Kart,debit,10.70,TRY
+debit_gzry_t,Gaziray Tam Temassız Kart,debit,15.00,TRY
+debit_gzry_i,Gaziray İndirimli Temassız Kart,debit,12.50,TRY
+debit_gzry_o,Gaziray Öğrenci Temassız Kart,debit,6.75,TRY
+debit_oho_shrici_t,Özel Halk Otobüsü Tam Temassız Kart,debit,22.40,TRY
+debit_oho_shrici_i,Özel Halk Otobüsü İndirimli Temassız Kart,debit,19.20,TRY
+debit_oho_shrici_o,Özel Halk Otobüsü Öğrenci Temassız Kart,debit,10.70,TRY
+debit_oho_baspinar_t,Özel Halk Otobüsü Başpınar Tam Temassız Kart,debit,29.00,TRY
+debit_oho_baspinar_i,Özel Halk Otobüsü Başpınar İndirimli Temassız Kart,debit,15.00,TRY
+debit_oho_baspinar_o,Özel Halk Otobüsü Başpınar Öğrenci Temassız Kart,debit,10.70,TRY
+debit_bo_kirsal_t,Kırsal Otobüs Tam Temassız Kart,debit,47.50,TRY
+debit_bo_kirsal_i,Kırsal Otobüs İndirimli Temassız Kart,debit,33.20,TRY
+debit_bo_kirsal_o,Kırsal Otobüs Öğrenci Temassız Kart,debit,14.00,TRY
+debit_nizip_shrici_t,Nizip Tam Temassız Kart,debit,19.20,TRY
+debit_nizip_shrici_i,Nizip İndirimli Temassız Kart,debit,15.00,TRY
+debit_nizip_shrici_o,Nizip Öğrenci Temassız Kart,debit,10.70,TRY
+debit_nizip_konteyner_t,Nizip Konteyner Tam Kent Temassız Kart,debit,21.85,TRY
+debit_nizip_konteyner_i,Nizip Konteyner İndirimli Kent Temassız Kart,debit,17.65,TRY
+debit_nizip_konteyner_o,Nizip Konteyner Öğrenci Kent Temassız Kart,debit,10.70,TRY
+debit_islahiye_oho_t,İslahiye Şehiriçi Tam Temassız Kart,debit,19.20,TRY
+debit_islahiye_oho_i,İslahiye Şehiriçi İndirimli Temassız Kart,debit,15.00,TRY
+debit_islahiye_oho_o,İslahiye Şehiriçi Öğrenci Temassız Kart,debit,10.70,TRY
+debit_bld_ring_t,Belediye Ring Tam Temassız Kart,debit,11.75,TRY
+debit_bld_ring_o,Belediye Ring Öğrenci Temassız Kart,debit,4.80,TRY
+manyetik_shrici_t,3 Binişlik Manyetik Kart Şehiriçi,manyetikbilet,100.00,TRY
+manyetik_kirsal_t,3 Binişlik Manyetik Kart Kırsal,manyetikbilet,145.00,TRY
+ucretsiz_aktarma,Ücretsiz Aktarma,,0.00,TRY
+aktarma_tam,İndirimli Tam Aktarma,,12.60,TRY
+aktarma_indirimli,İndirimli İndirimli Aktarma,,10.80,TRY
+aktarma_ogrenci,İndirimli Öğrenci Aktarma,,6.00,TRY
+aktarma_belediye_tam,Belediye Aracına İndirimli Tam Aktarma,,12.60,TRY
+aktarma_belediye_indirimli,Belediye Aracına İndirimli İndirimli Aktarma,,10.80,TRY
+aktarma_belediye_ogrenci,Belediye Aracına İndirimli Öğrenci Aktarma,,8.40,TRY
+aktarma_banliyo_tam,Banliyöye Tam Aktarma,,7.02,TRY
+aktarma_banliyo_indirimli,Banliyöye İndirimli Aktarma,,3.78,TRY
+aktarma_banliyo_ogrenci,Banliyöye Öğrenci Aktarma,,2.70,TRY

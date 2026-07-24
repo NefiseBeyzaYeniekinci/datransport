@@ -1,0 +1,5 @@
+fare_media_id,fare_media_name,fare_media_type
+gaziantepkart,Gaziantep Kart,2
+debit,Temassız Kart,3
+mobilnfc,Sanal NFC Kart,4
+manyetikbilet,3 Binişlik Manyetik Bilet,2

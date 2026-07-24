@@ -1,0 +1,15 @@
+from_leg_group_id,to_leg_group_id,transfer_count,duration_limit,duration_limit_type,fare_transfer_type,fare_product_id
+belediye,belediye,1,5400,0,0,ucretsiz_aktarma
+belediye,banliyo,,5400,0,0,ucretsiz_aktarma
+belediye,sari,,5400,0,0,aktarma_tam
+belediye,mavi,,5400,0,0,aktarma_tam
+banliyo,banliyo,1,5400,0,0,ucretsiz_aktarma
+banliyo,belediye,,5400,0,0,ucretsiz_aktarma
+sari,sari,1,5400,0,0,aktarma_tam
+sari,mavi,,5400,0,0,aktarma_tam
+sari,belediye,,5400,0,0,aktarma_belediye_tam
+sari,banliyo,,5400,0,0,aktarma_banliyo_tam
+mavi,sari,,5400,0,0,aktarma_tam
+mavi,mavi,1,5400,0,0,ucretsiz_aktarma
+mavi,belediye,,5400,0,0,aktarma_belediye_tam
+mavi,banliyo,,5400,0,0,aktarma_banliyo_tam

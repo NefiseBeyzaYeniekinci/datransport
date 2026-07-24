@@ -13,6 +13,7 @@ from src.api_client import fetch_bus_stops, fetch_bus_routes, fetch_tram_stops, 
 from src.data_cleaner import generate_cleaned_datasets, fix_mojibake
 from src.co2_calculator import calculate_haversine_distance, calculate_co2_emission, GAZIULAS_FLEET_SPECS
 from src.ml_model import get_trained_model, train_and_evaluate_model, load_kaggle_co2_dataset, predict_custom_vehicle_co2
+from src.gtfs_parser import gtfs_store
 
 app = Flask(__name__, static_folder="web", static_url_path="")
 
@@ -196,6 +197,10 @@ def get_stops():
 
 @app.route("/api/routes", methods=["GET"])
 def get_routes():
+    gtfs_routes = gtfs_store.get_all_routes()
+    if gtfs_routes:
+        return jsonify({"success": True, "count": len(gtfs_routes), "data": gtfs_routes})
+
     special_routes = [
         {"route_code": "T1", "route_name": "T1: İBN-İ SİNA - GAR (Tramvay)"},
         {"route_code": "T2", "route_name": "T2: ADLİYE - GAR (Tramvay)"},
@@ -348,6 +353,16 @@ def get_card_centers():
 
 @app.route("/api/route-details/<route_code>", methods=["GET"])
 def get_route_details(route_code):
+    gtfs_meta, gtfs_stops, gtfs_poly = gtfs_store.get_route_details(route_code)
+    if gtfs_meta and gtfs_stops and len(gtfs_stops) > 0:
+        return jsonify({
+            "success": True,
+            "meta": gtfs_meta,
+            "stop_count": len(gtfs_stops),
+            "stops": gtfs_stops,
+            "road_polyline": gtfs_poly if (gtfs_poly and len(gtfs_poly) > 0) else fetch_osrm_street_polyline(gtfs_stops)
+        })
+
     route_info = df_routes[df_routes["route_code"] == route_code]
     route_name = ""
     if not route_info.empty:

@@ -1,0 +1,17 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang
+6,Hayvanat Bahçesi,http://www.kentkart.com,Europe/Istanbul,tr
+7,Asansör,http://www.kentkart.com,Europe/Istanbul,tr
+1,Gaziulaş,http://www.kentkart.com,Europe/Istanbul,tr
+17,Nizip Özel Halk Otobüsleri,http://www.kentkart.com,Europe/Istanbul,tr
+2,Özel Halk Otobüsleri (Sarı),http://www.kentkart.com,Europe/Istanbul,tr
+10,Gazibis,http://www.kentkart.com,Europe/Istanbul,tr
+11,Vagon(Tramvay),http://www.kentkart.com,Europe/Istanbul,tr
+16,Spor Tesisleri,http://www.kentkart.com,Europe/Istanbul,tr
+8,Müze,http://www.kentkart.com,Europe/Istanbul,tr
+3,Özel Halk Otobüsleri (Mavi),http://www.kentkart.com,Europe/Istanbul,tr
+13,Gaziulaş Otopark,http://www.kentkart.com,Europe/Istanbul,tr
+19,HESPASS,http://www.kentkart.com,Europe/Istanbul,tr
+4,Tramvay,http://www.kentkart.com,Europe/Istanbul,tr
+20,Botanik Bahçesi,http://www.kentkart.com,Europe/Istanbul,tr
+18,Belediye,http://www.kentkart.com,Europe/Istanbul,tr
+5,Test,http://www.gaziulas.com,Europe/Istanbul,tr
