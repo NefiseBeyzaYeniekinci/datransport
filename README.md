@@ -22,7 +22,7 @@ Proje; vatandaşların ulaşım hatlarını incelemesini, yollar üzerinden ger�
 
 ### 1. 🚏 Hatlar & İnteraktif Harita
 * **Otobüs & Raylı Sistem Hatları:** GAZİULAŞ otobüs hatları (B01, B02...), T1 (Gar-Adliye), T2 (Gar-Akkent), T3 (Adliye-Burç) Tramvay hatları ve **GR01 Gaziray** banliyö hattının resmi durak dizilimleri.
-* **Canlı Araç & Durak Takibi:** Durak detaylarında hatta hizmet veren otobüs göstergeleri ve hat yönü değiştirme fonksiyonu.
+* **Durak Takibi:** Durak detaylarında hatta hizmet veren otobüs göstergeleri ve hat yönü değiştirme fonksiyonu.
 * **💳 Kart İşlem Merkezleri & GaziBis Katmanı:** Gaziantep genelindeki Kentkart başvuru merkezleri ve GaziBis istasyonlarının harita üzerinde gösterimi.
 
 ### 2. 📐 OSRM Gerçek Karayolu Mesafe Ölçer
@@ -79,32 +79,6 @@ Projenin geliştirilmesinde ve doğrulanmasında aşağıdaki resmi veri kaynakl
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma
-
-### 1. Depoyu Klonlayın
-```bash
-git clone https://github.com/NefiseBeyzaYeniekinci/datransport.git
-cd datransport
-```
-
-### 2. Gerekli Bağımlılıkları Yükleyin
-```bash
-pip install flask pandas numpy scikit-learn joblib requests
-```
-
-### 3. Sunucuyu Başlatın
-```bash
-python server.py
-```
-
-### 4. Tarayıcıda Açın
-Uygulama varsayılan olarak **`http://localhost:5000`** adresinde çalışmaya başlayacaktır:
-```text
- * Running on http://127.0.0.1:5000
-```
-
----
-
 ## 📁 Proje Dizin Yapısı
 
 ```text
@@ -136,5 +110,3 @@ datransport/
 ## 📜 Lisans ve Kullanım
 
 Bu proje **Gaziantep Büyükşehir Belediyesi Akıllı Ulaşım** vizyonu çerçevesinde açık veri standartlarına uygun olarak geliştirilmiştir.
-
-*Geliştirici:* **Nefise Beyza Yeniekinci**
