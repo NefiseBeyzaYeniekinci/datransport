@@ -2,11 +2,19 @@
 
 > **Kentkart Canlı API, Açık Veri Entegrasyonu, OSRM Karayolu Navigasyonu, Random Forest Makine Öğrenmesi CO2 Simülatörü ve GaziBis Mobilite Platformu**
 
-![Gaziantep Akıllı Ulaşım Portalı](https://img.shields.io/badge/Gaziantep%20B%C3%BCy%C3%BCk%C5%9Fehir%20Belediyesi-Ak%C4%B1ll%C4%B1%20Ula%C5%9F%C4%B1m-2563eb?style=for-the-badge)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-datransport.vercel.app-10b981?style=for-the-badge&logo=vercel)](https://datransport.vercel.app/)
+![Gaziantep Büyükşehir Belediyesi](https://img.shields.io/badge/Gaziantep%20B%C3%BCy%C3%BCk%C5%9Fehir%20Belediyesi-Ak%C4%B1ll%C4%B1%20Ula%C5%9F%C4%B1m-2563eb?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-2.3-000000?style=for-the-badge&logo=flask&logoColor=white)
 ![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-Random%20Forest-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
-![Leaflet](https://img.shields.io/badge/Leaflet-Interactive%20Maps-199900?style=for-the-badge&logo=leaflet&logoColor=white)
+
+---
+
+## 🌐 Canlı Yayın & Online Uygulama Adresi
+
+👉 **[https://datransport.vercel.app/](https://datransport.vercel.app/)**
+
+Proje Vercel Serverless bulut altyapısı üzerinde kesintisiz canlı yayın yapmaktadır. Yarı yolda kalmadan mobil ve masaüstü cihazlardan anında erişebilirsiniz.
 
 ---
 
@@ -22,7 +30,7 @@ Proje; vatandaşların ulaşım hatlarını incelemesini, yollar üzerinden ger�
 
 ### 1. 🚏 Hatlar & İnteraktif Harita
 * **Otobüs & Raylı Sistem Hatları:** GAZİULAŞ otobüs hatları (B01, B02...), T1 (Gar-Adliye), T2 (Gar-Akkent), T3 (Adliye-Burç) Tramvay hatları ve **GR01 Gaziray** banliyö hattının resmi durak dizilimleri.
-* **Durak Takibi:** Durak detaylarında hatta hizmet veren otobüs göstergeleri ve hat yönü değiştirme fonksiyonu.
+* **Canlı Araç & Durak Takibi:** Durak detaylarında hatta hizmet veren otobüs göstergeleri ve hat yönü değiştirme fonksiyonu.
 * **💳 Kart İşlem Merkezleri & GaziBis Katmanı:** Gaziantep genelindeki Kentkart başvuru merkezleri ve GaziBis istasyonlarının harita üzerinde gösterimi.
 
 ### 2. 📐 OSRM Gerçek Karayolu Mesafe Ölçer
@@ -61,6 +69,7 @@ Proje; vatandaşların ulaşım hatlarını incelemesini, yollar üzerinden ger�
 
 Projenin geliştirilmesinde ve doğrulanmasında aşağıdaki resmi veri kaynakları ve kütüphaneler kullanılmıştır:
 
+* 🌐 **Canlı Uygulama:** [https://datransport.vercel.app/](https://datransport.vercel.app/)
 * 🚌 **Hatlar, Güzergahlar ve Sefer Saatleri:** [GAZİULAŞ Resmi Web Sitesi](https://gaziulas.com.tr/) & [Gaziantep Kart Online](https://online.gaziantepkart.com.tr/)
 * 🚦 **Gaziantep Canlı Trafik Yoğunluğu ve Yol Durumu:** [Gaziantep Yoğunluk Haritası](https://gaziantep.yogunlukharitasi.com/)
 * 📊 **Otobüs & Araç CO2 Emisyon Hesaplama ML Veri Seti:** [Kaggle Vehicle CO2 Emissions Dataset](https://www.kaggle.com/datasets/brsahan/vehicle-co2-emissions-dataset)
@@ -75,38 +84,35 @@ Projenin geliştirilmesinde ve doğrulanmasında aşağıdaki resmi veri kaynakl
 * **Machine Learning:** Scikit-Learn (Random Forest Regressor Model)
 * **Frontend:** HTML5, Modern Vanilla CSS (Glassmorphism & Flex/Grid Design System), JavaScript (ES6+)
 * **Harita & Grafikler:** Leaflet.js (CartoDB Voyager Tiles), Chart.js (Custom Animated Plugins)
-* **İkonlar & Tipografi:** FontAwesome 6, Google Fonts (Inter & Outfit)
+* **Cloud & Serverless:** Vercel Cloud Serverless Python Functions
 
 ---
 
-## 📁 Proje Dizin Yapısı
+## 🚀 Kurulum ve Çalıştırma
 
-```text
-datransport/
-├── data/
-│   ├── api_cekilen_veriler.txt       # Çekilen ham API verileri
-│   ├── cleaned_bus_routes.csv        # Temizlenmiş hat ve durak verileri
-│   ├── cleaned_transport_data.csv    # Temizlenmiş ulaşım emisyon veri seti
-│   ├── co2_rf_model.joblib           # Eğitilmiş Random Forest ML Modeli
-│   ├── gazibis_reservations.json     # Kaydedilen GaziBis randevuları
-│   └── stop_requests.json            # Vatandaş durak talepleri
-├── src/
-│   ├── api_client.py                 # Kentkart & Açık Veri API entegrasyonu
-│   ├── co2_calculator.py             # CO2 emisyon hesaplama mantığı
-│   ├── data_cleaner.py               # Veri temizleme ve işleme boru hattı
-│   └── ml_model.py                   # Random Forest model eğitim modülü
-├── web/
-│   ├── css/
-│   │   └── style.css                 # Glassmorphic özel CSS tasarım sistemi
-│   ├── js/
-│   │   └── app.js                    # İnteraktif harita, OSRM ve grafik mantığı
-│   └── index.html                    # Ana portal HTML şablonu
-├── README.md                         # Proje dokümantasyonu
-└── server.py                         # Flask Web ve REST API sunucusu
+### 1. Depoyu Klonlayın
+```bash
+git clone https://github.com/NefiseBeyzaYeniekinci/datransport.git
+cd datransport
 ```
+
+### 2. Gerekli Bağımlılıkları Yükleyin
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Sunucuyu Başlatın
+```bash
+python server.py
+```
+
+### 4. Tarayıcıda Açın
+Uygulama varsayılan olarak **`http://localhost:5000`** adresinde çalışmaya başlayacaktır.
 
 ---
 
 ## 📜 Lisans ve Kullanım
 
 Bu proje **Gaziantep Büyükşehir Belediyesi Akıllı Ulaşım** vizyonu çerçevesinde açık veri standartlarına uygun olarak geliştirilmiştir.
+
+*Geliştirici:* **Nefise Beyza Yeniekinci**
