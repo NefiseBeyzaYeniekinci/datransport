@@ -1,0 +1,31 @@
+[
+  {
+    "request_id": "TLP-20260724-6593",
+    "route_code": "B01",
+    "start_stop_name": "Mevcut Durak 1",
+    "end_stop_name": "Mevcut Durak 2",
+    "proposed_stop_name": "TOKİ 2. Etap Ara Durağı",
+    "description": "İki durak arası 2.45 km ve yolcular için çok yürüme mesafesi var.",
+    "distance_km": 2.4,
+    "midpoint_km": 1.2,
+    "created_at": "2026-07-24 11:14:18"
+  },
+  {
+    "request_id": "TLP-20260724-8256",
+    "route_code": "B01",
+    "start_stop_name": "GATEM KUNDURACILAR SİTESİ",
+    "end_stop_name": "ARI SİTESİ",
+    "proposed_stop_name": "Haritadan İşaretlenen Konum (37.07515, 37.38055)",
+    "description": "İki durak arası mesafenin uzun olduğunu görüyooruz ayrıca yaya geçidi olmaması dolayısı ile de karşı tarafa geçip durağa ulaşamıuorz bundan dolahı ek durak talebinde bulunuyorum.",
+    "distance_km": 10.34,
+    "midpoint_km": 5.17,
+    "created_at": "2026-07-24 11:14:18"
+  },
+  {
+    "request_id": "TLP-20260724-1084",
+    "route_code": "B01",
+    "proposed_stop_name": "Bahriye Uçak Durağı",
+    "description": "İki durak arası çok yürüyoruz!!!",
+    "created_at": "2026-07-24 11:28:30"
+  }
+]

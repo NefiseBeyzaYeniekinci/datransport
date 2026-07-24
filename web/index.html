@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaziantep Büyükşehir Belediyesi | Akıllı Ulaşım Portalı</title>
+    
+    <!-- Leaflet CSS for Light Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Custom Light Theme CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <header class="navbar">
+        <div class="navbar-container">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-bus"></i>
+                </div>
+                <div>
+                    <div class="brand-title">Gaziantep Büyükşehir Belediyesi</div>
+                    <div class="brand-subtitle">Akıllı Ulaşım Portalı</div>
+                </div>
+            </div>
+            
+            <nav class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('tab-map')">
+                    <i class="fa-solid fa-map-location-dot"></i> Hatlar & Harita
+                </button>
+                <button class="nav-tab" onclick="switchTab('tab-traffic')">
+                    <i class="fa-solid fa-traffic-light" style="color: #ef4444;"></i> Canlı Trafik Haritası
+                </button>
+                <button class="nav-tab" onclick="switchTab('tab-request-stop')">
+                    <i class="fa-solid fa-plus-circle"></i> Yeni Durak Talebi
+                </button>
+                <button class="nav-tab" onclick="switchTab('tab-calculator')">
+                    <i class="fa-solid fa-leaf"></i> CO2 Salınım Hesaplayıcı
+                </button>
+                <button class="nav-tab" onclick="switchTab('tab-gazibis')">
+                    <i class="fa-solid fa-bicycle"></i> GaziBis Kirala & Randevu
+                </button>
+                <button class="nav-tab" onclick="switchTab('tab-data')">
+                    <i class="fa-solid fa-brain"></i> Veri & AI Simülatörü
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="app-container">
+
+        <!-- TAB 1: HATLAR & HARİTA + MESAFE ÖLÇÜM CETVELİ -->
+        <section id="tab-map" class="tab-content active">
+            <div class="map-layout">
+                <div class="sidebar-panel">
+                    <div id="view-route-list">
+                        <div class="selector-header-bar">
+                            <div class="search-input-wrapper">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="route-search-input" class="search-input" placeholder="Hat veya Raylı Sistem ara (T1, T2, GR01, B01)..." oninput="filterRouteList()">
+                            </div>
+                        </div>
+                        <div class="route-list-container" id="route-items-box"></div>
+                    </div>
+
+                    <div id="view-route-detail" style="display: none;" class="route-detail-panel">
+                        <div class="back-header-bar">
+                            <button class="back-btn" onclick="showRouteListView()">
+                                <i class="fa-solid fa-chevron-left"></i> Hatlar Listesi
+                            </button>
+                            <button class="icon-circle-btn" onclick="toggleCardCenters()" title="Kart İşlem Merkezleri">
+                                <i class="fa-regular fa-id-card"></i>
+                            </button>
+                        </div>
+
+                        <div class="route-detail-meta">
+                            <div class="route-meta-left">
+                                <div class="route-code-badge" id="detail-route-badge">B01</div>
+                                <div class="route-title" id="detail-route-name">GAZİKENT-ENSAR SİTESİ</div>
+                            </div>
+
+                            <div class="route-actions-right">
+                                <button class="icon-circle-btn yellow-btn" onclick="openScheduleModal()" title="Sefer Saatleri">
+                                    <i class="fa-regular fa-clock"></i>
+                                </button>
+                                <button class="icon-circle-btn green-btn" onclick="reverseRouteDirection()" title="Yön Değiştir">
+                                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="padding: 8px 16px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); background: #f8fafc; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <span>Hat Durakları & Ara Mesafeler</span>
+                            <span id="detail-stop-count">0 Durak</span>
+                        </div>
+
+                        <div class="stops-scroll-view" id="detail-stops-list"></div>
+                    </div>
+                </div>
+
+                <div style="position: relative; flex: 1;">
+                    <div style="position: absolute; top: 14px; right: 14px; z-index: 1000; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); padding: 8px 14px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.16); display: flex; gap: 8px; border: 1px solid #cbd5e1; align-items: center;">
+                        <button onclick="selectRoute('T1')" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35);"><i class="fa-solid fa-circle" style="color: #fee2e2; margin-right: 4px;"></i> T1 Tramvay</button>
+                        <button onclick="selectRoute('T2')" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);"><i class="fa-solid fa-circle" style="color: #d1fae5; margin-right: 4px;"></i> T2 Tramvay</button>
+                        <button onclick="selectRoute('T3')" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);"><i class="fa-solid fa-circle" style="color: #dbeafe; margin-right: 4px;"></i> T3 Tramvay</button>
+                        <button onclick="selectRoute('GR01')" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: #0f172a; background: linear-gradient(135deg, #facc15, #eab308); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(234, 179, 8, 0.35);"><i class="fa-solid fa-train" style="margin-right: 4px;"></i> GR01 Gaziray</button>
+                        <button onclick="toggleGaziBisMapLayer()" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(139, 92, 246, 0.35);"><i class="fa-solid fa-bicycle" style="margin-right: 4px;"></i> GaziBis</button>
+                        
+                        <div style="width: 1px; height: 24px; background: #cbd5e1; margin: 0 4px;"></div>
+                        
+                        <button id="btn-toggle-ruler" onclick="toggleRulerTool()" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #f97316, #ea580c); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(249, 115, 22, 0.35);">
+                            <i class="fa-solid fa-ruler-combined" style="margin-right: 4px;"></i> Mesafe Ölçer (Aktif Değil)
+                        </button>
+                    </div>
+
+                    <div id="ruler-info-banner" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); color: white; padding: 12px 24px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-size: 0.9rem; font-weight: 700; border: 1.5px solid #38bdf8; gap: 16px; align-items: center;">
+                        <span id="ruler-text">Haritada istediğiniz 2 noktaya tıklayın</span>
+                        <button onclick="clearRulerMeasurement()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 10px; border-radius: 12px; cursor: pointer; font-size: 0.8rem; font-weight: 800;">Temizle</button>
+                    </div>
+
+                    <div id="map-container"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAZİANTEP CANLI TRAFİK YOĞUNLUĞU HARİTASI -->
+        <section id="tab-traffic" class="tab-content">
+            <div class="card" style="padding: 1rem; border-radius: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 38px; height: 38px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);">
+                            <i class="fa-solid fa-traffic-light"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.15rem; font-weight: 900; color: #0f172a;">Gaziantep Canlı Trafik Yoğunluk Haritası</div>
+                            <div style="font-size: 0.8rem; color: #64748b;">Yol Durumu, Anlık Dur-Kalk ve Yoğunluk İndeksi (yogunlukharitasi.com Entegrasyonu)</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span style="background: #fef2f2; color: #991b1b; font-weight: 800; font-size: 0.8rem; padding: 6px 14px; border-radius: 20px; border: 1px solid #fca5a5; display: flex; align-items: center; gap: 6px;">
+                            <span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444;"></span>
+                            Canlı Yol Durumu
+                        </span>
+                        <a href="https://gaziantep.yogunlukharitasi.com/" target="_blank" style="background: #f1f5f9; color: #0f172a; text-decoration: none; font-weight: 800; font-size: 0.8rem; padding: 6px 14px; border-radius: 12px; border: 1px solid #cbd5e1; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Sayfayı Yeni Sekmede Aç
+                        </a>
+                    </div>
+                </div>
+
+                <div style="height: calc(100vh - 180px); width: 100%; border-radius: 16px; overflow: hidden; border: 1.5px solid #cbd5e1; box-shadow: var(--shadow-md);">
+                    <iframe src="https://gaziantep.yogunlukharitasi.com/" style="width: 100%; height: 100%; border: none;" title="Gaziantep Canlı Trafik Yoğunluk Haritası"></iframe>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: YENİ DURAK TALEBİ -->
+        <section id="tab-request-stop" class="tab-content">
+            <div class="calculator-grid">
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fa-solid fa-plus-circle" style="color: var(--primary-color);"></i>
+                        Yeni Durak Ekleme Talebi Oluştur
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                        Sağdaki harita üzerinde istediğiniz noktaya tıklayarak en yakın önceki ve sonraki durağı ve aradaki mesafeyi otomatik tespit edebilirsiniz.
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">1. İlgili Otobüs veya Tramvay Hattı:</label>
+                        <select id="req-route-select" class="form-select" onchange="onRequestRouteSelectChanged()"></select>
+                    </div>
+
+                    <div id="box-nearest-stops-calc" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 12px; margin-bottom: 1.25rem;">
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;"><i class="fa-solid fa-location-dot"></i> Harita Konum Tespiti & Ara Mesafe Ölçümü</div>
+                        <div style="font-size: 0.85rem; font-weight: 700; color: #1e40af;" id="txt-nearest-prev">Önceki Durak: Henüz seçilmedi</div>
+                        <div style="font-size: 0.85rem; font-weight: 700; color: #1e40af; margin-top: 4px;" id="txt-nearest-next">Sonraki Durak: Henüz seçilmedi</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">2. Önerilen Yeni Durak Adı / Konumu:</label>
+                        <input type="text" id="req-proposed-name" class="form-input" placeholder="Örn: TOKİ Evleri Ara Durağı (Veya Sağdaki Haritadan Tıklayın)">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">3. Talep Gerekçesi / Açıklama:</label>
+                        <textarea id="req-description" class="form-input" rows="4" placeholder="Örn: Bu iki durak arası mesafe 1.8 km ve yürüme süresi çok uzun olduğu için ara durak talebi..."></textarea>
+                    </div>
+
+                    <button class="btn-primary" onclick="submitStopRequest()">
+                        <i class="fa-solid fa-paper-plane"></i> Durak Talebini Gönder
+                    </button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fa-solid fa-list-check" style="color: var(--primary-color);"></i>
+                            Gönderilen Durak Talepleri
+                        </div>
+                        <div class="table-container" style="max-height: 200px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Talep No</th>
+                                        <th>Hat</th>
+                                        <th>Önerilen Durak</th>
+                                        <th>Açıklama</th>
+                                        <th>Durum</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-submitted-requests">
+                                    <tr>
+                                        <td><code>TLP-20260724-8492</code></td>
+                                        <td><span class="route-code-badge" style="padding: 2px 6px; font-size: 0.75rem;">B01</span></td>
+                                        <td><strong>TOKİ 2. Etap Ara Durağı</strong></td>
+                                        <td>Gazikent yakınında ara durak talebi</td>
+                                        <td><span style="background: #d1fae5; color: #065f46; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">Talep Alındı</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span><i class="fa-solid fa-map-location-dot" style="color: var(--accent-orange);"></i> Haritadan Durak Konumu İşaretleme</span>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">Haritaya tıklayarak mesafeyi ve durakları ölçün</span>
+                        </div>
+                        <div id="request-map-container" style="height: 340px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-color);"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: ULTRA-MODERN CO2 SALINIM & GÜZERGAH KARŞILAŞTIRMA DASHBOARD -->
+        <section id="tab-calculator" class="tab-content">
+
+            <!-- MODERN HERO HEADER BANNER -->
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%); border-radius: 20px; padding: 22px 28px; margin-bottom: 1.5rem; color: white; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25); display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255, 255, 255, 0.15); position: relative; overflow: hidden;">
+                <div style="position: absolute; right: -20px; top: -30px; width: 220px; height: 220px; background: rgba(99, 102, 241, 0.15); border-radius: 50%; filter: blur(40px);"></div>
+                <div style="z-index: 2;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                        <span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fa-solid fa-leaf" style="margin-right: 4px;"></i> Canlı Karbon Karşılaştırma Paneli</span>
+                    </div>
+                    <h2 style="font-size: 1.6rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 4px;">Akıllı Ulaşım Güzergah & CO2 Karşılaştırma</h2>
+                    <p style="font-size: 0.88rem; color: #cbd5e1; font-weight: 500;">Otobüs ve Tramvay modlarını karşılaştırın, en çevreci güzergahla doğayı koruyun!</p>
+                </div>
+                <div style="z-index: 2; display: flex; gap: 14px;">
+                    <div style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 12px 20px; border-radius: 14px; text-align: right;">
+                        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Şehir İçi Günlük CO2 Tasarrufu</div>
+                        <div style="font-size: 1.4rem; font-weight: 900; color: #4ade80;">12.5 Ton / Gün</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DUAL COLUMN DASHBOARD -->
+            <div class="calculator-grid">
+                
+                <!-- LEFT PANEL: INTERACTIVE TRIP PLANNER -->
+                <div class="card" style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; box-shadow: 0 10px 25px rgba(15,23,42,0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;">
+                        <div style="width: 38px; height: 38px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">
+                            <i class="fa-solid fa-route"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.1rem; font-weight: 800; color: #0f172a;">Güzergah Seçimi</div>
+                            <div style="font-size: 0.78rem; color: #64748b;">Kalkış ve varış durağını belirleyin</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>1. Başlangıç / Kalkış Durağı:</span>
+                            <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px;" id="lbl-start-count">1 durak bulundu</span>
+                        </label>
+                        <div style="position: relative;">
+                            <select id="calc-start-stop" class="form-select" onchange="calculateCO2()"></select>
+                            <button onclick="resetStartStopSelect()" style="position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer;">&times;</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>2. Varış Durağı:</span>
+                            <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px;" id="lbl-end-count">2 durak bulundu</span>
+                        </label>
+                        <div style="position: relative;">
+                            <select id="calc-end-stop" class="form-select" onchange="calculateCO2()"></select>
+                            <button onclick="resetEndStopSelect()" style="position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer;">&times;</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="fuel-group">
+                        <label class="form-label">Otobüs Model Tipi:</label>
+                        <select id="calc-bus-model" class="form-select" onchange="calculateCO2()">
+                            <option value="MAN Lion's City (Solo)">MAN Lion's City (Solo)</option>
+                            <option value="MAN Lion's City G (Körüklü)">MAN Lion's City G (Körüklü)</option>
+                            <option value="Otokar 9M Doruk LE (Midibüs)">Otokar 9M Doruk LE (Midibüs)</option>
+                            <option value="Otokar 10M Doruk LE (Midibüs)">Otokar 10M Doruk LE (Midibüs)</option>
+                            <option value="Temsa Prestij City">Temsa Prestij City</option>
+                            <option value="18M Körüklü Elektrikli Otobüs">18M Körüklü Elektrikli Otobüs</option>
+                        </select>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #f8fafc, #f1f5f9); border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 1.25rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                            <div style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fa-solid fa-traffic-light"></i> Hat Trafik Yoğunluğu</div>
+                            <span style="background: #d1fae5; color: #047857; font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;">Canlı Veri</span>
+                        </div>
+                        <div style="font-size: 1.15rem; font-weight: 900; color: #2563eb;" id="txt-traffic-percent">%38 • Akıcı Şehir Trafiği</div>
+                        <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;" id="txt-traffic-factor">Dur-Kalk Etkisi: CO2 Emisyonu +%15.2</div>
+                    </div>
+
+                    <button class="btn-primary" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border-radius: 14px; padding: 14px; font-weight: 900;" onclick="calculateCO2()">
+                        <i class="fa-solid fa-calculator" style="margin-right: 6px;"></i> Güzergahı Hesapla & Karşılaştır
+                    </button>
+                </div>
+
+                <!-- RIGHT PANEL: PREMIUM COMPARISON REPORT DASHBOARD -->
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    
+                    <div class="card" style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 1.75rem; box-shadow: 0 10px 25px rgba(15,23,42,0.05);">
+                        <!-- REPORT HEADER -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="background: #0f172a; color: white; font-weight: 800; font-size: 0.85rem; padding: 6px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-chart-line"></i> Güzergah Karşılaştırma Raporu
+                                </div>
+                            </div>
+                            <div style="background: #f1f5f9; color: #0f172a; font-weight: 800; font-size: 0.88rem; padding: 6px 14px; border-radius: 20px;" id="cmp-distance-header">Mesafe: 5.4 km</div>
+                        </div>
+
+                        <!-- ROUTE SUBTITLE -->
+                        <div style="font-size: 0.92rem; font-weight: 800; color: #1e293b; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px;" id="cmp-route-subtitle">
+                            10002 - Demokrasi Meydanı / Valilik ➔ 10005 - Karataş 1. Bölge Çarşı
+                        </div>
+
+                        <!-- SIDE BY SIDE COMPARISON CARDS -->
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.25rem;">
+                            
+                            <!-- OPTION 1: BELEDİYE OTOBÜSÜ -->
+                            <div style="border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 16px; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <span style="font-weight: 800; font-size: 1rem; color: #0f172a;"><i class="fa-solid fa-bus" style="margin-right: 6px; color: #2563eb;"></i> Otobüs</span>
+                                        <span style="background: #f1f5f9; color: #475569; font-weight: 800; font-size: 0.72rem; padding: 3px 8px; border-radius: 10px;">Sık Sefer</span>
+                                    </div>
+                                    <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 12px;" id="cmp-bus-lines">B92, M18, B10 Hatları</div>
+                                </div>
+                                <div style="border-top: 1px dashed #e2e8f0; pt: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
+                                    <div>
+                                        <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 700;">SALINIM</div>
+                                        <div style="font-weight: 900; font-size: 1.3rem; color: #0f172a;" id="cmp-bus-co2">15.12 kg</div>
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 700;" id="cmp-bus-time">~18 dk</div>
+                                </div>
+                            </div>
+
+                            <!-- OPTION 2: TRAMVAY HATTI (RECOMMENDED EMERALD GLASS CARD) -->
+                            <div style="border: 2px solid #10b981; border-radius: 16px; padding: 16px; background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 6px 18px rgba(16, 185, 129, 0.15);">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <span style="font-weight: 800; font-size: 1rem; color: #047857;"><i class="fa-solid fa-train-tram" style="margin-right: 6px; color: #10b981;"></i> Tramvay</span>
+                                        <span style="background: #10b981; color: white; font-weight: 900; font-size: 0.72rem; padding: 3px 10px; border-radius: 20px; box-shadow: 0 3px 8px rgba(16,185,129,0.3);">ÖNERİLEN</span>
+                                    </div>
+                                    <div style="font-size: 0.78rem; color: #166534; margin-bottom: 12px;" id="cmp-tram-lines">T1 / T2 / T3 Tramvay Hattı</div>
+                                </div>
+                                <div style="border-top: 1px dashed #a7f3d0; pt: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
+                                    <div>
+                                        <div style="font-size: 0.72rem; color: #047857; font-weight: 700;">DÜŞÜK SALINIM</div>
+                                        <div style="font-weight: 900; font-size: 1.3rem; color: #047857;" id="cmp-tram-co2">2.16 kg</div>
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: #047857; font-weight: 800;" id="cmp-tram-time">~14 dk</div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- AI ADVICE CALLOUT BOX -->
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 12px 16px; margin-bottom: 1.25rem; font-size: 0.83rem; color: #1e40af; line-height: 1.5;" id="cmp-ai-advice">
+                            <i class="fa-solid fa-lightbulb" style="color: #2563eb; margin-right: 6px;"></i> <strong>Yapay Zeka Tavsiyesi:</strong> Seçilen güzergahta Gaziray hattı bulunmadığı için sadece o hatta hizmet veren ulaşım modları (Otobüs & Tramvay) karşılaştırılmıştır.
+                        </div>
+
+                        <!-- CARBON SAVINGS BANNER WITH TREE BADGE -->
+                        <div style="border: 1.5px dashed #34d399; background: #ecfdf5; border-radius: 14px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-size: 0.88rem; font-weight: 800; color: #047857;" id="cmp-saving-text">
+                                Düşük emisyonlu mod seçimi ile 12.96 kg CO2 tasarruf sağlandı.
+                            </div>
+                            <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: 900; font-size: 0.82rem; padding: 7px 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(16,185,129,0.3); display: flex; align-items: center; gap: 6px;" id="cmp-tree-badge">
+                                <i class="fa-solid fa-tree"></i> 17.7 Ağaç Kazancı
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ANIMATED CHARTS -->
+                    <div class="chart-card">
+                        <div class="card-title" style="margin-bottom: 1rem;">
+                            <i class="fa-solid fa-chart-bar" style="color: var(--primary-color);"></i>
+                            Gaziulaş Filosu & Ulaşım Türleri Toplam Araç CO2 Salınım Karşılaştırması
+                        </div>
+                        <div style="position: relative; height: 230px; width: 100%;">
+                            <canvas id="co2Chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="card-title" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span><i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-orange);"></i> Gün İçindeki Saatlere Göre Otobüs CO2 Emisyon Eğrisi (06:00 - 24:00)</span>
+                            <span style="font-size: 0.78rem; font-weight: 600; color: var(--accent-red); background: #fef2f2; padding: 2px 8px; border-radius: 6px;">Yoğun Saat Zirvesi</span>
+                        </div>
+                        <div style="position: relative; height: 200px; width: 100%;">
+                            <canvas id="hourlyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 5: GAZİBİS İSTASYONLARI & BİSİKLET KİRALAMA -->
+        <section id="tab-gazibis" class="tab-content">
+            <div class="calculator-grid">
+                <div class="card">
+                    <div class="card-title">
+                        <i class="fa-solid fa-bicycle" style="color: #8b5cf6;"></i>
+                        GaziBis Bisiklet Kiralama & Randevu Oluştur
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                        İstediğiniz GaziBis istasyonunu seçerek bisikletinizi hemen rezerve edebilir ve sıra beklemeden teslim alabilirsiniz.
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">1. GaziBis İstasyonu Seçiniz:</label>
+                        <select id="gbis-station-select" class="form-select"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">2. Adınız ve Soyadınız:</label>
+                        <input type="text" id="gbis-name" class="form-input" placeholder="Örn: Nefise Beyza">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display: flex; justify-content: space-between;">
+                            <span>3. Telefon Numarası:</span>
+                            <span style="font-size: 0.75rem; color: #8b5cf6; font-weight: 700;">Format: 05XX XXX XX XX</span>
+                        </label>
+                        <input type="tel" id="gbis-phone" class="form-input" maxlength="14" placeholder="05XX XXX XX XX" oninput="formatPhoneNumber(this)">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">4. Kiralama Süresi:</label>
+                        <select id="gbis-duration" class="form-select">
+                            <option value="1 Saat">1 Saat Kiralama (Ücretsiz / Akıllı Kart)</option>
+                            <option value="2 Saat">2 Saat Kiralama</option>
+                            <option value="4 Saat">4 Saat Kiralama</option>
+                            <option value="Tam Gün">Tam Gün Kiralama</option>
+                        </select>
+                    </div>
+
+                    <button class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);" onclick="submitGaziBisReservation()">
+                        <i class="fa-solid fa-key"></i> GaziBis Bisiklet Randevusu Oluştur
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span><i class="fa-solid fa-map-pin" style="color: #8b5cf6;"></i> Canlı GaziBis İstasyon Müsaitlik Durumları</span>
+                        <span style="background: #f3e8ff; color: #6b21a8; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 0.78rem;">Canlı Veri</span>
+                    </div>
+
+                    <div class="table-container" style="max-height: 400px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>İstasyon Adı</th>
+                                    <th>Boş Bisiklet</th>
+                                    <th>Boş Park Yeri</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-gazibis-stations"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: VERİ & AI SIMULATOR + 5 ADET CSV EXPORT RAPOR SEÇENEĞİ -->
+        <section id="tab-data" class="tab-content">
+            <div class="calculator-grid" style="margin-bottom: 1.5rem;">
+                <!-- LEFT SIDE: AI SIMULATOR -->
+                <div class="card" style="border: 2px solid #8b5cf6; background: linear-gradient(135deg, #ffffff, #faf5ff);">
+                    <div class="card-title" style="color: #6d28d9;">
+                        <i class="fa-solid fa-robot" style="color: #8b5cf6;"></i>
+                        Canlı AI Karbon Tahmin Simülatörü (Random Forest)
+                    </div>
+                    <div style="font-size: 0.83rem; color: #64748b; margin-bottom: 1rem;">
+                        Araç teknik değerlerini girin; Makine Öğrenmesi modelimiz anlık kilometredeki CO2 salınımını ve Eco Puanını hesaplasın!
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display: flex; justify-content: space-between;">
+                            <span>1. Motor Hacmi (Litre):</span>
+                            <strong id="lbl-sim-engine" style="color: #6d28d9;">2.0 L</strong>
+                        </label>
+                        <input type="range" id="sim-engine" min="0.8" max="8.0" step="0.1" value="2.0" class="form-input" style="padding: 0;" oninput="updateAISimulator()">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">2. Silindir Sayısı:</label>
+                        <select id="sim-cylinders" class="form-select" onchange="updateAISimulator()">
+                            <option value="3">3 Silindir (Küçük Hacim)</option>
+                            <option value="4" selected>4 Silindir (Standart Otomobil)</option>
+                            <option value="6">6 Silindir (Büyük SUV / Midibüs)</option>
+                            <option value="8">8 Silindir (Ağır Vasıta / Otobüs)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">3. Şehir İçi Yakıt Tüketimi (L/100 km):</label>
+                        <input type="number" id="sim-consumption" value="8.5" step="0.5" class="form-input" oninput="updateAISimulator()">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">4. Yakıt / Araç Türü:</label>
+                        <select id="sim-fuel-type" class="form-select" onchange="updateAISimulator()">
+                            <option value="Dizel (Diesel)">Dizel (Diesel)</option>
+                            <option value="Benzin (Gasoline)">Benzin (Gasoline)</option>
+                            <option value="Hibrit (Hybrid)">Hibrit (Hybrid / Benzin+Elektrik)</option>
+                            <option value="Elektrikli (Electric)">%100 Elektrikli (Zero Emission)</option>
+                        </select>
+                    </div>
+
+                    <div style="background: white; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 14px; margin-top: 1rem; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1); text-align: center;">
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #6d28d9; text-transform: uppercase; letter-spacing: 0.05em;">Anlık AI Emisyon Tahmini</div>
+                        <div style="font-size: 1.8rem; font-weight: 900; color: #4c1d95; margin: 4px 0;" id="sim-res-co2">208.5 g/km</div>
+                        <div style="font-size: 0.88rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; display: inline-block; color: white; background: #eab308;" id="sim-res-badge">B (Dengeli Emisyon)</div>
+                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 6px;" id="sim-res-trees">Günlük Telafi İçin: 3.5 Ağaç Gerekli</div>
+                    </div>
+                </div>
+
+                <!-- RIGHT SIDE: ANIMATED FEATURE IMPORTANCE CHART -->
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div class="chart-card" style="height: 100%; display: flex; flex-direction: column;">
+                        <div class="card-title" style="margin-bottom: 1rem;">
+                            <i class="fa-solid fa-diagram-project" style="color: #8b5cf6;"></i>
+                            Yapay Zeka Karar Faktörleri (Feature Importance)
+                        </div>
+
+                        <div style="position: relative; flex: 1; min-height: 260px; width: 100%;">
+                            <canvas id="featureChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FUEL TYPE EMISSIONS COMPARISON ANIMATED CHART -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-title" style="margin-bottom: 1rem;">
+                    <i class="fa-solid fa-gas-pump" style="color: var(--accent-orange);"></i>
+                    Yakıt Türlerine Göre Ortalama CO2 Emisyon Dağılımı (7,385 Araç Verisi)
+                </div>
+
+                <div style="position: relative; height: 260px; width: 100%;">
+                    <canvas id="fuelEmissionsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- GREEN TRANSPORT SUMMARY -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-title">
+                    <i class="fa-solid fa-leaf" style="color: #10b981;"></i>
+                    Gaziantep Toplu Taşıma Filosu & Çevre Dostu Yeşil Ulaşım Özeti
+                </div>
+
+                <div class="metrics-row" style="margin-bottom: 1.25rem;">
+                    <div class="metric-box" style="border-left: 4px solid #ef4444;">
+                        <div class="metric-title">GAZİULAŞ Otobüs Filosu</div>
+                        <div class="metric-value" style="color: #ef4444;">164 Araç</div>
+                        <div class="metric-sub">Solo, Körüklü & Midibüs</div>
+                    </div>
+
+                    <div class="metric-box" style="border-left: 4px solid #10b981;">
+                        <div class="metric-title">%100 Elektrikli Otobüs</div>
+                        <div class="metric-value" style="color: #10b981;">18 Metre</div>
+                        <div class="metric-sub">Sıfır Emisyonlu Çevreci</div>
+                    </div>
+
+                    <div class="metric-box" style="border-left: 4px solid #2563eb;">
+                        <div class="metric-title">Tramvay Hatları (T1-T2-T3)</div>
+                        <div class="metric-value" style="color: #2563eb;">48 Durak</div>
+                        <div class="metric-sub">Elektrikli Raylı Sistem</div>
+                    </div>
+
+                    <div class="metric-box" style="border-left: 4px solid #8b5cf6;">
+                        <div class="metric-title">GaziBis Bisiklet İstasyonu</div>
+                        <div class="metric-value" style="color: #8b5cf6;">8 İstasyon</div>
+                        <div class="metric-sub">Karbonsuz Kentsel Ulaşım</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; font-size: 0.85rem; color: #334155; line-height: 1.6;">
+                    <strong>Gaziantep Büyükşehir Belediyesi Yeşil Şehir Projesi:</strong> GAZİULAŞ otobüs filosu Euro 6 düşük emisyon standartlarına sahip modern araçlardan oluşmaktadır. Şehir genelinde günlük ortalama <strong>12.5 ton CO2 tasarrufu</strong> sağlanmaktadır.
+                </div>
+            </div>
+
+            <!-- NEW CSV EXPORT CENTER FOR ALL PUBLIC TRANSPORT DATASETS -->
+            <div class="card" style="border: 2px solid #0284c7; background: linear-gradient(135deg, #f0f9ff, #e0f2fe);">
+                <div class="card-title" style="color: #0369a1; display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-file-csv" style="color: #0284c7;"></i> Veri Setleri & Rapor Dışa Aktarma Merkezi (CSV Export)</span>
+                    <span style="background: #bae6fd; color: #0369a1; padding: 2px 10px; border-radius: 12px; font-weight: 800; font-size: 0.78rem;">5 Farklı CSV İndirme Formatı</span>
+                </div>
+                <div style="font-size: 0.85rem; color: #0369a1; margin-bottom: 1.25rem;">
+                    Gaziantep ulaşım verilerini, durak GPS konumlarını, GaziBis canlı istasyonlarını ve otobüs filosu emisyon kataloglarını tek tıkla CSV dosyası olarak bilgisayarınıza indirebilirsiniz:
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                    <div style="background: white; border: 1px solid #7dd3fc; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-weight: 800; color: #0369a1; font-size: 0.92rem; margin-bottom: 4px;">1. Duraklar & GPS Konum Verisi</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">Durak ID, Durak Adı, Enlem, Boylam, Hat Türü</div>
+                        </div>
+                        <button onclick="downloadStopsCSV()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fa-solid fa-download"></i> Durak Verisini İndir (CSV)
+                        </button>
+                    </div>
+
+                    <div style="background: white; border: 1px solid #a7f3d0; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-weight: 800; color: #047857; font-size: 0.92rem; margin-bottom: 4px;">2. Otobüs Filosu & CO2 Kataloğu</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">Model Türleri, Araç Sayıları, CO2 g/km, Emisyon Sınıfı</div>
+                        </div>
+                        <button onclick="downloadFleetCSV()" style="background: linear-gradient(135deg, #10b981, #047857); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fa-solid fa-download"></i> Filo Kataloğunu İndir (CSV)
+                        </button>
+                    </div>
+
+                    <div style="background: white; border: 1px solid #ddd6fe; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-weight: 800; color: #6d28d9; font-size: 0.92rem; margin-bottom: 4px;">3. GaziBis Canlı İstasyon Verisi</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">İstasyon Konumları, Boş Bisiklet, Boş Park Sayısı</div>
+                        </div>
+                        <button onclick="downloadGaziBisCSV()" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fa-solid fa-download"></i> GaziBis Verisini İndir (CSV)
+                        </button>
+                    </div>
+
+                    <div style="background: white; border: 1px solid #fed7aa; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-weight: 800; color: #c2410c; font-size: 0.92rem; margin-bottom: 4px;">4. Durak Talepleri & Yol Raporu</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">Vatandaş Talep Kayıtları, Ara Mesafeler, Durum</div>
+                        </div>
+                        <button onclick="downloadStopRequestsCSV()" style="background: linear-gradient(135deg, #f97316, #c2410c); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fa-solid fa-download"></i> Durak Taleplerini İndir (CSV)
+                        </button>
+                    </div>
+
+                    <div style="background: white; border: 1px solid #fbcfe8; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-weight: 800; color: #be185d; font-size: 0.92rem; margin-bottom: 4px;">5. Kaggle ML Araç Veri Seti</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">7,385 Kayıtlık Makine Öğrenmesi Eğitim Verisi</div>
+                        </div>
+                        <button onclick="downloadKaggleDatasetCSV()" style="background: linear-gradient(135deg, #ec4899, #be185d); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fa-solid fa-download"></i> ML Veri Setini İndir (CSV)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- HAREKET SAATLERİ MODAL DIALOG -->
+    <div id="schedule-modal" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-regular fa-clock" style="color: #ef4444; font-size: 1.3rem;"></i>
+                    <div>
+                        <div style="font-weight: 800; font-size: 1.1rem;" id="modal-route-code">B01 Sefer Saatleri</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);" id="modal-route-name">GAZİKENT-ENSAR SİTESİ</div>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeScheduleModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background: #eff6ff; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #1d4ed8; margin-bottom: 1rem;">
+                    Sefer Sıklığı: <strong>Her 12 - 15 dakikada bir</strong> (Canlı Gaziulaş Tarifesi)
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Gün Tipi</th>
+                            <th>İlk Sefer</th>
+                            <th>Son Sefer</th>
+                            <th>Yoğun Saat Sıklığı</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>Hafta İçi</strong></td><td>06:00</td><td>23:30</td><td>Her 10 dk</td></tr>
+                        <tr><td><strong>Cumartesi</strong></td><td>06:30</td><td>23:00</td><td>Her 15 dk</td></tr>
+                        <tr><td><strong>Pazar / Resmi Tatil</strong></td><td>07:00</td><td>22:30</td><td>Her 20 dk</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" style="width: auto; padding: 8px 24px;" onclick="closeScheduleModal()">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM SUCCESS MODAL DIALOG -->
+    <div id="success-modal" class="modal-backdrop">
+        <div class="modal-card" style="text-align: center;">
+            <div style="width: 60px; height: 60px; background: #d1fae5; color: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1rem auto;">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">Durak Talebi Başarıyla Alındı!</h3>
+            <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 1.25rem;">Talebiniz Gaziantep Büyükşehir Belediyesi Ulaşım Daire Başkanlığı sistemine kaydedilmiştir.</p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; text-align: left; font-size: 0.88rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #64748b; font-weight: 600;">Talep Takip No:</span><strong id="succ-modal-id" style="color: #2563eb;">TLP-20260724-8256</strong></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #64748b; font-weight: 600;">İlgili Hat:</span><strong id="succ-modal-route" style="color: #0f172a;">B01 GAZİKENT-ENSAR SİTESİ</strong></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #64748b; font-weight: 600;">Önceki En Yakın Durak:</span><strong id="succ-modal-prev" style="color: #059669;">Gazikent Son Durak</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: #64748b; font-weight: 600;">Sonraki En Yakın Durak:</span><strong id="succ-modal-next" style="color: #d97706;">Rayalp Apt.</strong></div>
+            </div>
+            <button class="btn-primary" onclick="closeSuccessModal()">
+                <i class="fa-solid fa-circle-check"></i> Harika, Tamam
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,2093 @@
+{
+  "B01": [
+    {
+      "stop_id": "759",
+      "stop_name": "GAZIKENT SON DURAK",
+      "lat": 37.0092,
+      "lng": 37.4171,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1779",
+      "stop_name": "RAYALP APT.",
+      "lat": 37.1292,
+      "lng": 37.3271,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1671",
+      "stop_name": "BURAK MAH. 29 NOLU CAD. 1",
+      "lat": 37.1112,
+      "lng": 37.3631,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1671",
+      "stop_name": "BURAK MAH. 29 NOLU CAD. 2",
+      "lat": 37.1112,
+      "lng": 37.3631,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1335",
+      "stop_name": "ÇAMLICA ÖĞRENCI YURDU",
+      "lat": 37.1052,
+      "lng": 37.3751,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1671",
+      "stop_name": "BURAK MAH. 29 NOLU CAD. 3",
+      "lat": 37.1112,
+      "lng": 37.3631,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0107",
+      "stop_name": "BIRLIK INŞAAT",
+      "lat": 37.09084,
+      "lng": 37.41716,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0108",
+      "stop_name": "MELISA AKAR PARKI",
+      "lat": 37.09015,
+      "lng": 37.41585,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0109",
+      "stop_name": "FIDAN INŞAAT",
+      "lat": 37.08945,
+      "lng": 37.41455,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "2",
+      "stop_name": "26 NOLU CAD.ÜZERI. 1",
+      "lat": 37.0122,
+      "lng": 37.3361,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "2",
+      "stop_name": "26 NOLU CAD. ÜZERI 2",
+      "lat": 37.0122,
+      "lng": 37.3361,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "2",
+      "stop_name": "26 NOLU CAD. ÜZERI 3",
+      "lat": 37.0122,
+      "lng": 37.3361,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "3",
+      "stop_name": "AKTEKS SPOR SALONU",
+      "lat": 37.0332,
+      "lng": 37.3691,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "4",
+      "stop_name": "PASAJ ESNAF SITESI",
+      "lat": 37.0542,
+      "lng": 37.4021,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0115",
+      "stop_name": "HISAR YAPI SITESI",
+      "lat": 37.0853,
+      "lng": 37.4067,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0116",
+      "stop_name": "SERINEVLER SITESI",
+      "lat": 37.0846,
+      "lng": 37.4054,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0117",
+      "stop_name": "BURCU SITESI",
+      "lat": 37.08391,
+      "lng": 37.40409,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "8",
+      "stop_name": "19 NOLU CAD.",
+      "lat": 37.1382,
+      "lng": 37.3841,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0119",
+      "stop_name": "ARI SITESI",
+      "lat": 37.08252,
+      "lng": 37.40148,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "10",
+      "stop_name": "SEÇKIN EVLER",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0121",
+      "stop_name": "TANIŞ YAPI KOOP.",
+      "lat": 37.08114,
+      "lng": 37.39886,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0122",
+      "stop_name": "KUDÜS SITESI",
+      "lat": 37.08044,
+      "lng": 37.39756,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "2765",
+      "stop_name": "ASOSMER INŞAAT",
+      "lat": 37.1352,
+      "lng": 37.3151,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "2460",
+      "stop_name": "SARI KONUTLAR 2.",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0125",
+      "stop_name": "SEVIMLI CITY 2.",
+      "lat": 37.07836,
+      "lng": 37.39364,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0126",
+      "stop_name": "ANPA GROSS",
+      "lat": 37.07767,
+      "lng": 37.39233,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "14",
+      "stop_name": "OTOGAR 1",
+      "lat": 37.1142,
+      "lng": 37.4321,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "15",
+      "stop_name": "OTOGAR 2",
+      "lat": 37.1352,
+      "lng": 37.3151,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0129",
+      "stop_name": "FEN IŞLERI GASKI",
+      "lat": 37.07559,
+      "lng": 37.38841,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0130",
+      "stop_name": "MERVEŞEHIR 49021 CAD. 3",
+      "lat": 37.0749,
+      "lng": 37.3871,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0131",
+      "stop_name": "MERVEŞEHIR 49021 CAD. 4",
+      "lat": 37.0742,
+      "lng": 37.3858,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "246",
+      "stop_name": "ŞEHITKAMIL NIKAH SALONU",
+      "lat": 37.0362,
+      "lng": 37.4381,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0133",
+      "stop_name": "MERVEŞEHIR BIM AVM.",
+      "lat": 37.07282,
+      "lng": 37.38318,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0134",
+      "stop_name": "MERVEŞEHIR 22 NOLU CAD.",
+      "lat": 37.07212,
+      "lng": 37.38188,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0135",
+      "stop_name": "MERVEŞEHIR SANTRALI",
+      "lat": 37.07143,
+      "lng": 37.38057,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1249",
+      "stop_name": "MERINOS MERVEŞEHIR 50070 CAD.",
+      "lat": 37.0992,
+      "lng": 37.3871,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "19",
+      "stop_name": "70 NOLU CAD.",
+      "lat": 37.0692,
+      "lng": 37.4471,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0138",
+      "stop_name": "ONATKUTLAR SOSYAL TESISLERI",
+      "lat": 37.06935,
+      "lng": 37.37665,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "21",
+      "stop_name": "ONAT KUTLAR SOSYAL TESISLERI 1",
+      "lat": 37.1112,
+      "lng": 37.3631,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "21",
+      "stop_name": "ONAT KUTLAR SOSYAL TESISLERI 25 NOLU CAD. 2",
+      "lat": 37.1112,
+      "lng": 37.3631,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "21",
+      "stop_name": "ONAT KUTLAR SOSYAL TESISLERI 3",
+      "lat": 37.1112,
+      "lng": 37.3631,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1322",
+      "stop_name": "TURGUT ÖZAL BULVARI MOBESE",
+      "lat": 37.1322,
+      "lng": 37.3961,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0143",
+      "stop_name": "TURĞUT ÖZAL BLV MOBESE",
+      "lat": 37.06589,
+      "lng": 37.37011,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1978",
+      "stop_name": "SELIMIYE MAHALLESI",
+      "lat": 37.1082,
+      "lng": 37.4441,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0145",
+      "stop_name": "ŞEHIT ENES KAYA ORTA OKUL",
+      "lat": 37.0645,
+      "lng": 37.3675,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "26",
+      "stop_name": "ÇETIN EMEÇ CADDESI",
+      "lat": 37.0662,
+      "lng": 37.3781,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "246",
+      "stop_name": "ŞEHITKAMIL DEVLET HST.",
+      "lat": 37.0362,
+      "lng": 37.4381,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "28",
+      "stop_name": "KAYAÖNÜ ITFAIYE",
+      "lat": 37.1082,
+      "lng": 37.4441,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "29",
+      "stop_name": "ÖZ FATIH SÜRÜCÜ KURSU",
+      "lat": 37.1292,
+      "lng": 37.3271,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "303",
+      "stop_name": "SANI KONUKOĞLU BLV. 1",
+      "lat": 37.0332,
+      "lng": 37.3691,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0151",
+      "stop_name": "ADLIYE SARAYI",
+      "lat": 37.06034,
+      "lng": 37.35966,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0152",
+      "stop_name": "ULU MOBILYA TUGAY",
+      "lat": 37.05965,
+      "lng": 37.35835,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0153",
+      "stop_name": "POLIS OKULU LOJMANI",
+      "lat": 37.05895,
+      "lng": 37.35705,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "34",
+      "stop_name": "GÜVENEVLER 26 NOLU CAD. 1",
+      "lat": 37.0842,
+      "lng": 37.3421,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "34",
+      "stop_name": "GÜVENEVLER 26 NOLU CAD. 2",
+      "lat": 37.0842,
+      "lng": 37.3421,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "34",
+      "stop_name": "GÜVENEVLER 26 NOLU CAD. 3",
+      "lat": 37.0842,
+      "lng": 37.3421,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0157",
+      "stop_name": "ENKAYA INŞAAT",
+      "lat": 37.05618,
+      "lng": 37.35182,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "983",
+      "stop_name": "OSMANLI PARKI",
+      "lat": 37.0632,
+      "lng": 37.3091,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "52",
+      "stop_name": "MUSTAFA TAŞAR CADDESI",
+      "lat": 37.0122,
+      "lng": 37.3361,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "40",
+      "stop_name": "ATATÜRK MAH.POLAT SITESI",
+      "lat": 37.0602,
+      "lng": 37.3901,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0161",
+      "stop_name": "VALI KEMAL KALENDER CAD. 1",
+      "lat": 37.05341,
+      "lng": 37.34659,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0162",
+      "stop_name": "SUN SITESI",
+      "lat": 37.05272,
+      "lng": 37.34528,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0163",
+      "stop_name": "VALI KEMAL KALENDER CAD. 2",
+      "lat": 37.05202,
+      "lng": 37.34398,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0164",
+      "stop_name": "MEMIK ŞEKERCI CAMII",
+      "lat": 37.05133,
+      "lng": 37.34267,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0165",
+      "stop_name": "NIHAVEND KONUTLARI",
+      "lat": 37.05064,
+      "lng": 37.34136,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0166",
+      "stop_name": "MUHSIN YAZICIOĞLU CAD.",
+      "lat": 37.04994,
+      "lng": 37.34006,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0167",
+      "stop_name": "SENA SITESI",
+      "lat": 37.04925,
+      "lng": 37.33875,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0168",
+      "stop_name": "SAĞLAMCILAR CAMII ÖNÜ",
+      "lat": 37.04856,
+      "lng": 37.33744,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "49",
+      "stop_name": "KÜRŞAD TÜZMEN BLV.",
+      "lat": 37.0992,
+      "lng": 37.3871,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "50",
+      "stop_name": "ABDULKADIR AKSU BLV. KALELI KONUTLARI",
+      "lat": 37.1202,
+      "lng": 37.4201,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "50",
+      "stop_name": "ABDULKADIR AKSU BLV. METRO AVM.",
+      "lat": 37.1202,
+      "lng": 37.4201,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "52",
+      "stop_name": "MUSTAFA ERKENT ÇEŞMESI",
+      "lat": 37.0122,
+      "lng": 37.3361,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0173",
+      "stop_name": "MIMOZA SITESI",
+      "lat": 37.04509,
+      "lng": 37.33091,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0174",
+      "stop_name": "NIJMEGEN BLV.",
+      "lat": 37.0444,
+      "lng": 37.3296,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "54",
+      "stop_name": "OSMAN GAZI MAH. 56062 NOLU CAD. 1",
+      "lat": 37.0542,
+      "lng": 37.4021,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "54",
+      "stop_name": "OSMAN GAZI MAH. 56062 NOLU CAD. 2",
+      "lat": 37.0542,
+      "lng": 37.4021,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "820",
+      "stop_name": "GÜÇSÜZLER YURDU",
+      "lat": 37.0902,
+      "lng": 37.3301,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "818",
+      "stop_name": "ÖZASLAN OKULLARI",
+      "lat": 37.0482,
+      "lng": 37.4141,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1789",
+      "stop_name": "TÜRGEV KIZ ÖĞRENCI YURDU 2",
+      "lat": 37.0392,
+      "lng": 37.3571,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0180",
+      "stop_name": "PRIMEMALL AVM.",
+      "lat": 37.04024,
+      "lng": 37.32176,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0181",
+      "stop_name": "PRIMEMALL AVM. 1",
+      "lat": 37.03955,
+      "lng": 37.32045,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0182",
+      "stop_name": "RAYLI SISTEMLER DEPO",
+      "lat": 37.03885,
+      "lng": 37.31915,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "56",
+      "stop_name": "GÜLLÜOĞLU CAMII",
+      "lat": 37.0962,
+      "lng": 37.3181,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "57",
+      "stop_name": "ÜNIVERSITE BLV. TIP FAKÜLTESI ÖNÜ",
+      "lat": 37.1172,
+      "lng": 37.3511,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "57",
+      "stop_name": "ÜNIVERSITE ÖNÜ",
+      "lat": 37.1172,
+      "lng": 37.3511,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0186",
+      "stop_name": "MÜZEYYEN ERKUL BILIM MERKEZI",
+      "lat": 37.03608,
+      "lng": 37.31392,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "1187",
+      "stop_name": "HALEP BULVARI",
+      "lat": 36.9972,
+      "lng": 37.4411,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "0188",
+      "stop_name": "ENSAR SITESI",
+      "lat": 37.03469,
+      "lng": 37.31131,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    },
+    {
+      "stop_id": "896",
+      "stop_name": "GÜNEYKENT SONDURAK",
+      "lat": 37.0362,
+      "lng": 37.4381,
+      "lines": [
+        "B01",
+        "B30",
+        "B57",
+        "B79",
+        "B80",
+        "M03",
+        "M04",
+        "M05"
+      ]
+    }
+  ],
+  "B02": [
+    {
+      "stop_id": "1660",
+      "stop_name": "MAVIKENT SON DURAK",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1660",
+      "stop_name": "MAVIKENT 4.ETAP",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1660",
+      "stop_name": "MAVIKENT MAH.A 101",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "671",
+      "stop_name": "ŞAHINBEY ASFALT ŞANTIYESI",
+      "lat": 37.1112,
+      "lng": 37.3631,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1660",
+      "stop_name": "MAVIKENT SANAYI SITESI YOLU",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1660",
+      "stop_name": "MAVIKENT SANAYI YOLU 2",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1660",
+      "stop_name": "MAVIKENT SANAYI YOLU 3",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1660",
+      "stop_name": "MAVIKENT 3.ETAP SITESI",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1776",
+      "stop_name": "GAZILER SITESI",
+      "lat": 37.0662,
+      "lng": 37.3781,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1776",
+      "stop_name": "GAZILER SITESI PARK",
+      "lat": 37.0662,
+      "lng": 37.3781,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1660",
+      "stop_name": "MAVIKENT MH. SEMT PAZARI",
+      "lat": 37.0302,
+      "lng": 37.4501,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0212",
+      "stop_name": "GENTAŞ PARK EVLERI",
+      "lat": 37.0256,
+      "lng": 37.34315,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "890",
+      "stop_name": "GÜNSEV SITESI 9.",
+      "lat": 37.0602,
+      "lng": 37.3901,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0214",
+      "stop_name": "ZELIHA ZIYLAN KIZ ANADOLU LISESI",
+      "lat": 37.02807,
+      "lng": 37.34518,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0215",
+      "stop_name": "IBNISINA MAH.1",
+      "lat": 37.0293,
+      "lng": 37.3462,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0216",
+      "stop_name": "IBNISINA MAH.2",
+      "lat": 37.03054,
+      "lng": 37.34721,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0217",
+      "stop_name": "IBNISINA MAH.3",
+      "lat": 37.03178,
+      "lng": 37.34822,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0218",
+      "stop_name": "IBNISINA MAH.4",
+      "lat": 37.03301,
+      "lng": 37.34924,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "890",
+      "stop_name": "IBNI SINA GÜNSEV SITESI",
+      "lat": 37.0602,
+      "lng": 37.3901,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0220",
+      "stop_name": "IBNISINA MAH.",
+      "lat": 37.03548,
+      "lng": 37.35127,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "2714",
+      "stop_name": "HAKKI ORHAN INŞAAT",
+      "lat": 37.1142,
+      "lng": 37.4321,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "890",
+      "stop_name": "IBNI SINA MAH.RAMPA",
+      "lat": 37.0602,
+      "lng": 37.3901,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "578",
+      "stop_name": "ÖZDEMIRBEY CAD 2",
+      "lat": 37.1082,
+      "lng": 37.4441,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1852",
+      "stop_name": "YEŞIL VADI KÖPRÜSÜ",
+      "lat": 37.0122,
+      "lng": 37.3361,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "203",
+      "stop_name": "ÖZDEMIR BEY CADDESI KAVŞAK",
+      "lat": 37.0332,
+      "lng": 37.3691,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "2639",
+      "stop_name": "GÜZELDERE ANADOLU LISESI",
+      "lat": 37.0392,
+      "lng": 37.3571,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0227",
+      "stop_name": "BEDRI INCE TAHTACI ILK OKULU",
+      "lat": 37.04414,
+      "lng": 37.35836,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "2392",
+      "stop_name": "YEŞILVADI KAPALI PAZAR YERI",
+      "lat": 37.1022,
+      "lng": 37.3061,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1292",
+      "stop_name": "TOKI EVLERI",
+      "lat": 37.1022,
+      "lng": 37.3061,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1292",
+      "stop_name": "TOKI EVLERI",
+      "lat": 37.1022,
+      "lng": 37.3061,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "2392",
+      "stop_name": "YEŞILVADI KAPALI PAZAR YERI",
+      "lat": 37.1022,
+      "lng": 37.3061,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "375",
+      "stop_name": "DUMLUPINAR",
+      "lat": 37.0452,
+      "lng": 37.3451,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "375",
+      "stop_name": "DUMLUPINAR YALÇIN PIDE",
+      "lat": 37.0452,
+      "lng": 37.3451,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "375",
+      "stop_name": "DUMLUPINAR MH.",
+      "lat": 37.0452,
+      "lng": 37.3451,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "375",
+      "stop_name": "DUMLUPINAR CAMII",
+      "lat": 37.0452,
+      "lng": 37.3451,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1865",
+      "stop_name": "ESENTEPE MAHALLESI 36 NOLU SK",
+      "lat": 37.1352,
+      "lng": 37.3151,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1865",
+      "stop_name": "ESENTEPE SOSYAL TESISLERI",
+      "lat": 37.1352,
+      "lng": 37.3151,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0238",
+      "stop_name": "YEŞILIRMAK CAD.",
+      "lat": 37.05773,
+      "lng": 37.36952,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "200",
+      "stop_name": "25.ARALIK I.Ö OKULU",
+      "lat": 37.1202,
+      "lng": 37.4201,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0240",
+      "stop_name": "YAŞAM HASTANESI",
+      "lat": 37.0602,
+      "lng": 37.37155,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "735",
+      "stop_name": "DÜZTEPE I.Ö.O",
+      "lat": 37.1052,
+      "lng": 37.3751,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0242",
+      "stop_name": "HACI HALIL CAMII",
+      "lat": 37.06268,
+      "lng": 37.37357,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1368",
+      "stop_name": "ALIYE ÖMER BATTAL I.Ö.O",
+      "lat": 37.0482,
+      "lng": 37.4141,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1003",
+      "stop_name": "BALIKLI",
+      "lat": 37.0332,
+      "lng": 37.3691,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0245",
+      "stop_name": "ESKI EMIRGAN",
+      "lat": 37.06638,
+      "lng": 37.37662,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "191",
+      "stop_name": "ABDULLAH KEPKEP",
+      "lat": 37.0812,
+      "lng": 37.4231,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "316",
+      "stop_name": "FORUM AVM.",
+      "lat": 37.0062,
+      "lng": 37.3481,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "316",
+      "stop_name": "FORUM AVM.",
+      "lat": 37.0062,
+      "lng": 37.3481,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "904",
+      "stop_name": "ESKI OTOBÜS IŞLETMESI",
+      "lat": 37.0542,
+      "lng": 37.4021,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "1197",
+      "stop_name": "D.D.Y LOJISTIK",
+      "lat": 37.0572,
+      "lng": 37.3211,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    },
+    {
+      "stop_id": "0251",
+      "stop_name": "ISTASYON MEYDAN",
+      "lat": 37.0738,
+      "lng": 37.3827,
+      "lines": [
+        "B02",
+        "B01",
+        "M01",
+        "M03",
+        "S03"
+      ]
+    }
+  ]
+}

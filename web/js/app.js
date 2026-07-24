@@ -1,0 +1,1361 @@
+// Global State
+let map = null;
+let requestMap = null;
+let pinnedRequestMarker = null;
+let requestMapPolyline = null;
+let requestMapStopMarkers = [];
+let currentRequestRouteStops = [];
+
+let currentMarkers = [];
+let currentPolyline = null;
+let busVehicleMarkers = [];
+let cardCenterMarkers = [];
+let gaziBisMarkers = [];
+let isCardCentersVisible = false;
+let isGaziBisVisible = false;
+
+// Real Street Distance Ruler Tool State
+let isRulerActive = false;
+let rulerPoints = [];
+let rulerMarkers = [];
+let rulerPolyline = null;
+
+let co2Chart = null;
+let hourlyChart = null;
+let featureChart = null;
+let fuelEmissionsChart = null;
+
+let allStops = [];
+let allRoutes = [];
+let gazibisStationsList = [];
+let isReversed = false;
+let currentStopsData = [];
+let currentRoadPolyline = [];
+let currentMeta = {};
+
+document.addEventListener("DOMContentLoaded", () => {
+    initMap();
+    initRequestMap();
+    loadRoutes();
+    loadStops();
+    loadGaziBisStations();
+    initCharts();
+    initMLCharts();
+    updateAISimulator();
+});
+
+// Phone Number Input Formatting (Strict Max 11 Digits, Format 05XX XXX XX XX)
+function formatPhoneNumber(input) {
+    let digits = input.value.replace(/\D/g, '');
+    if (digits.length > 11) digits = digits.substring(0, 11);
+
+    if (digits.length === 0) {
+        input.value = '';
+    } else if (digits.length <= 4) {
+        input.value = digits;
+    } else if (digits.length <= 7) {
+        input.value = `${digits.substring(0, 4)} ${digits.substring(4)}`;
+    } else if (digits.length <= 9) {
+        input.value = `${digits.substring(0, 4)} ${digits.substring(4, 7)} ${digits.substring(7)}`;
+    } else {
+        input.value = `${digits.substring(0, 4)} ${digits.substring(4, 7)} ${digits.substring(7, 9)} ${digits.substring(9, 11)}`;
+    }
+}
+
+// Reset Dropdown Selections
+function resetStartStopSelect() {
+    const sel = document.getElementById('calc-start-stop');
+    if (sel && sel.options.length > 0) sel.selectedIndex = 0;
+    calculateCO2();
+}
+
+function resetEndStopSelect() {
+    const sel = document.getElementById('calc-end-stop');
+    if (sel && sel.options.length > 1) sel.selectedIndex = 1;
+    calculateCO2();
+}
+
+// CSV Export Helpers
+function triggerCSVDownload(filename, csvContent) {
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function downloadStopsCSV() {
+    if (!allStops || allStops.length === 0) return;
+    let csv = "Durak ID,Durak Adı,Enlem (Lat),Boylam (Lng),Ulaşım Türü\n";
+    allStops.forEach(s => {
+        csv += `"${s.stop_id}","${s.stop_name}",${s.lat},${s.lng},"${s.type || 'Otobüs Durağı'}"\n`;
+    });
+    triggerCSVDownload("Gaziantep_Tüm_Duraklar_GPS_Verisi.csv", csv);
+}
+
+function downloadFleetCSV() {
+    let csv = "Otobüs Modeli,Filo Adedi,Motor Tipi,Yakıt Türü,Ortalama CO2 (g/km),Emisyon Sınıfı,Günlük Gerekli Ağaç Adedi\n";
+    csv += '"MAN Lion\'s City (Solo)",50,"Euro 6 Diesel","Dizel",265.0,"Euro 6",4.4\n';
+    csv += '"MAN Lion\'s City G (Körüklü)",10,"Euro 6 Heavy Diesel","Dizel",390.0,"Euro 6",6.5\n';
+    csv += '"Otokar 9M Doruk LE",36,"Euro 6 Diesel","Dizel",195.0,"Euro 6",3.25\n';
+    csv += '"Otokar 10M Doruk LE",14,"Euro 6 Diesel","Dizel",210.0,"Euro 6",3.5\n';
+    csv += '"Temsa Prestij City",27,"Euro 6 Diesel","Dizel",145.0,"Euro 6",2.4\n';
+    csv += '"18M Körüklü Elektrikli Otobüs",2,"Li-Ion Batarya EV","Elektrik",0.0,"Sıfır Emisyon",0.0\n';
+    triggerCSVDownload("GAZİULAŞ_Otobüs_Filosu_CO2_Kataloğu.csv", csv);
+}
+
+function downloadGaziBisCSV() {
+    if (!gazibisStationsList || gazibisStationsList.length === 0) return;
+    let csv = "İstasyon ID,İstasyon Adı,Enlem,Boylam,Boş Bisiklet Sayısı,Boş Park Yeri,Durum\n";
+    gazibisStationsList.forEach(st => {
+        csv += `"${st.id}","${st.name}",${st.lat},${st.lng},${st.available_bikes},${st.available_docks},"${st.status}"\n`;
+    });
+    triggerCSVDownload("GaziBis_Canlı_İstasyon_Müsaitlik_Verisi.csv", csv);
+}
+
+function downloadStopRequestsCSV() {
+    let csv = "Talep ID,Hat Kodu,Önerilen Durak Adı,Talep Açıklaması,Durum,Tarih\n";
+    csv += '"TLP-20260724-8492","B01","TOKİ 2. Etap Ara Durağı","Gazikent yakınında ara durak talebi","Talep Alındı","2026-07-24"\n';
+    csv += '"TLP-20260724-1025","T1","Akkent Parkı - Karataş Ara Durağı","Ara yürüme mesafesi 1.4 km olduğu için yeni durak talebi","Talep Alındı","2026-07-24"\n';
+    triggerCSVDownload("Gaziantep_Vatandaş_Durak_Talepleri_Raporu.csv", csv);
+}
+
+async function downloadKaggleDatasetCSV() {
+    try {
+        const res = await fetch('/api/ml-info');
+        const json = await res.json();
+        if (json.success && json.sample_data) {
+            let csv = "Engine Size(L),Cylinders,Fuel Type,Vehicle Class,Fuel Consumption Comb (L/100 km),CO2 Emissions(g/km)\n";
+            json.sample_data.forEach(row => {
+                csv += `${row['Engine Size(L)'] || 2.0},${row['Cylinders'] || 4},"${row['Fuel Type'] || 'D'}","${row['Vehicle Class'] || 'VAN'}",${row['Fuel Consumption Comb (L/100 km)'] || 8.5},${row['CO2 Emissions(g/km)'] || 200}\n`;
+            });
+            triggerCSVDownload("Kaggle_Vehicle_CO2_ML_Dataset.csv", csv);
+        }
+    } catch (e) {
+        console.error("Error downloading Kaggle CSV:", e);
+    }
+}
+
+// Tab Navigation
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    
+    const btn = Array.from(document.querySelectorAll('.nav-tab')).find(b => b.getAttribute('onclick').includes(tabId));
+    if (btn) btn.classList.add('active');
+
+    if (tabId === 'tab-map' && map) {
+        setTimeout(() => map.invalidateSize(), 200);
+    } else if (tabId === 'tab-request-stop' && requestMap) {
+        setTimeout(() => requestMap.invalidateSize(), 200);
+    } else if (tabId === 'tab-calculator') {
+        setTimeout(() => {
+            if (co2Chart) { co2Chart.resize(); co2Chart.update(); }
+            if (hourlyChart) { hourlyChart.resize(); hourlyChart.update(); }
+        }, 200);
+    } else if (tabId === 'tab-data') {
+        setTimeout(() => {
+            if (featureChart) { featureChart.resize(); featureChart.update(); }
+            if (fuelEmissionsChart) { fuelEmissionsChart.resize(); fuelEmissionsChart.update(); }
+        }, 200);
+    }
+}
+
+function initMap() {
+    const gaziantepCoords = [37.0662, 37.3781];
+    map = L.map('map-container').setView(gaziantepCoords, 13);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(map);
+
+    map.on('click', async (e) => {
+        if (!isRulerActive) return;
+
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+
+        rulerPoints.push([lat, lng]);
+
+        const ptIcon = L.divIcon({
+            className: 'ruler-pt-pin',
+            html: `<div style="background:#ea580c; color:white; width:26px; height:26px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; box-shadow:0 3px 8px rgba(0,0,0,0.35);">${rulerPoints.length}</div>`,
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+        });
+
+        const m = L.marker([lat, lng], { icon: ptIcon }).addTo(map);
+        rulerMarkers.push(m);
+
+        if (rulerPoints.length === 2) {
+            const p1 = rulerPoints[0];
+            const p2 = rulerPoints[1];
+
+            document.getElementById('ruler-text').innerHTML = `Canlı Karayolu Harita Motorundan Gerçek Yol Mesafesi Hesaplanıyor...`;
+
+            try {
+                const res = await fetch('/api/street-route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        lat1: p1[0], lng1: p1[1],
+                        lat2: p2[0], lng2: p2[1],
+                        mode: 'driving'
+                    })
+                });
+
+                const json = await res.json();
+
+                if (json.success) {
+                    const distKm = json.distance_km;
+                    const distMeters = json.distance_meters;
+                    const driveMins = json.duration_mins;
+                    const walkMins = Math.round((distKm / 5.0) * 60);
+
+                    if (rulerPolyline) map.removeLayer(rulerPolyline);
+
+                    rulerPolyline = L.polyline(json.geometry, {
+                        color: '#ea580c',
+                        weight: 5,
+                        opacity: 0.95,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                    }).addTo(map);
+
+                    const banner = document.getElementById('ruler-info-banner');
+                    document.getElementById('ruler-text').innerHTML = `Gerçek Karayolu Mesafesi: ${distKm} km (${distMeters}m) • Sürüş: ~${driveMins} dk • Yürüme: ~${walkMins} dk <span style="background: #059669; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.72rem; margin-left: 6px;">Gerçek Yol Verisi</span>`;
+                    banner.style.display = 'flex';
+                }
+            } catch (err) {
+                console.error("Error calculating street route:", err);
+            }
+        } else if (rulerPoints.length > 2) {
+            clearRulerMeasurement();
+            rulerPoints.push([lat, lng]);
+            const m1 = L.marker([lat, lng], { icon: ptIcon }).addTo(map);
+            rulerMarkers.push(m1);
+        }
+    });
+}
+
+function toggleRulerTool() {
+    isRulerActive = !isRulerActive;
+    const btn = document.getElementById('btn-toggle-ruler');
+    const banner = document.getElementById('ruler-info-banner');
+
+    if (isRulerActive) {
+        btn.innerHTML = '<i class="fa-solid fa-ruler-combined" style="margin-right: 4px;"></i> Mesafe Ölçer (Aktif)';
+        btn.style.background = "linear-gradient(135deg, #10b981, #059669)";
+        banner.style.display = 'flex';
+        document.getElementById('ruler-text').textContent = "Haritada yollar üzerinden gerçek mesafesini ölçmek istediğiniz 2 noktaya tıklayın";
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-ruler-combined" style="margin-right: 4px;"></i> Mesafe Ölçer (Aktif Değil)';
+        btn.style.background = "linear-gradient(135deg, #f97316, #ea580c)";
+        banner.style.display = 'none';
+        clearRulerMeasurement();
+    }
+}
+
+function clearRulerMeasurement() {
+    rulerMarkers.forEach(m => map.removeLayer(m));
+    rulerMarkers = [];
+    rulerPoints = [];
+    if (rulerPolyline) {
+        map.removeLayer(rulerPolyline);
+        rulerPolyline = null;
+    }
+    if (isRulerActive) {
+        document.getElementById('ruler-text').textContent = "Haritada yollar üzerinden gerçek mesafesini ölçmek istediğiniz 2 noktaya tıklayın";
+    }
+}
+
+function initRequestMap() {
+    const gaziantepCoords = [37.0662, 37.3781];
+    requestMap = L.map('request-map-container').setView(gaziantepCoords, 13);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(requestMap);
+
+    requestMap.on('click', (e) => {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+
+        if (pinnedRequestMarker) {
+            requestMap.removeLayer(pinnedRequestMarker);
+        }
+
+        const pinIcon = L.divIcon({
+            className: 'pinned-stop-marker',
+            html: `<div style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 3px solid white; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);"><i class="fa-solid fa-location-dot"></i></div>`,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
+        });
+
+        let nearestPrev = "Tespit ediliyor...";
+        let nearestNext = "Tespit ediliyor...";
+        let interStopDistText = "";
+
+        if (currentRequestRouteStops && currentRequestRouteStops.length >= 2) {
+            let minDist = 999999;
+            let closestIdx = 0;
+
+            currentRequestRouteStops.forEach((s, idx) => {
+                const d = haversine(lat, lng, floatVal(s.lat), floatVal(s.lng));
+                if (d < minDist) {
+                    minDist = d;
+                    closestIdx = idx;
+                }
+            });
+
+            const prevIdx = Math.max(0, closestIdx - 1);
+            const nextIdx = Math.min(currentRequestRouteStops.length - 1, closestIdx + 1);
+
+            const prevStop = currentRequestRouteStops[prevIdx];
+            const nextStop = currentRequestRouteStops[nextIdx];
+
+            const dPrev = Math.round(haversine(lat, lng, floatVal(prevStop.lat), floatVal(prevStop.lng)) * 1000);
+            const dNext = Math.round(haversine(lat, lng, floatVal(nextStop.lat), floatVal(nextStop.lng)) * 1000);
+            const totalBetween = Math.round(haversine(floatVal(prevStop.lat), floatVal(prevStop.lng), floatVal(nextStop.lat), floatVal(nextStop.lng)) * 1000);
+
+            nearestPrev = `${prevStop.stop_name} (~${dPrev}m)`;
+            nearestNext = `${nextStop.stop_name} (~${dNext}m)`;
+            interStopDistText = ` (Ara Karayolu Mesafesi: ${totalBetween}m)`;
+
+            document.getElementById('req-proposed-name').value = `${prevStop.stop_name} - ${nextStop.stop_name} Ara Durağı`;
+            document.getElementById('req-description').value = `Bu iki durak arasındaki karayolu mesafesi ${totalBetween} metre (~${Math.round((totalBetween/1000/5.0)*60)} dk yürüme süresi) olduğu için yeni ara durak eklenmesi talep edilmektedir.`;
+        } else {
+            document.getElementById('req-proposed-name').value = `Haritadan İşaretlenen Konum (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+        }
+
+        document.getElementById('txt-nearest-prev').textContent = `Önceki Durak: ${nearestPrev}`;
+        document.getElementById('txt-nearest-next').textContent = `Sonraki Durak: ${nearestNext}${interStopDistText}`;
+
+        pinnedRequestMarker = L.marker([lat, lng], { icon: pinIcon })
+            .bindPopup(`
+                <div style="font-family: 'Inter', sans-serif;">
+                    <div style="font-weight: 800; color: #ea580c; font-size: 0.95rem; margin-bottom: 4px;"><i class="fa-solid fa-location-dot"></i> Önerilen Yeni Durak Konumu</div>
+                    <div style="font-size: 0.8rem; color: #059669; font-weight: 600;">Önceki: ${nearestPrev}</div>
+                    <div style="font-size: 0.8rem; color: #d97706; font-weight: 600;">Sonraki: ${nearestNext}</div>
+                </div>
+            `)
+            .addTo(requestMap);
+
+        pinnedRequestMarker.openPopup();
+    });
+}
+
+function floatVal(v) {
+    return parseFloat(v) || 0.0;
+}
+
+async function loadRoutes() {
+    try {
+        const res = await fetch('/api/routes');
+        const json = await res.json();
+        
+        if (json.success && json.data) {
+            allRoutes = json.data;
+            renderRouteList(allRoutes);
+            populateRequestRouteSelect(allRoutes);
+            if (allRoutes.length > 0) {
+                onRequestRouteSelectChanged();
+            }
+        }
+    } catch (err) {
+        console.error("Error loading routes:", err);
+    }
+}
+
+function populateRequestRouteSelect(routes) {
+    const reqSelect = document.getElementById('req-route-select');
+    if (!reqSelect) return;
+    reqSelect.innerHTML = '';
+    routes.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.route_code;
+        opt.textContent = `${r.route_code} - ${r.route_name}`;
+        reqSelect.appendChild(opt);
+    });
+}
+
+function renderRouteList(routes) {
+    const container = document.getElementById('route-items-box');
+    container.innerHTML = '';
+
+    routes.forEach((r) => {
+        const item = document.createElement('div');
+        item.className = 'route-list-item';
+        item.onclick = () => selectRoute(r.route_code);
+
+        const badgeClass = r.route_code.startsWith('T') ? 'red-badge' : (r.route_code.startsWith('GR') ? 'yellow-badge' : '');
+
+        item.innerHTML = `
+            <div class="route-code-badge ${badgeClass}">${r.route_code}</div>
+            <div class="route-name-text">${r.route_name}</div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function filterRouteList() {
+    const query = document.getElementById('route-search-input').value.toLowerCase().trim();
+    if (!query) {
+        renderRouteList(allRoutes);
+        return;
+    }
+
+    const filtered = allRoutes.filter(r => 
+        r.route_code.toLowerCase().includes(query) || 
+        r.route_name.toLowerCase().includes(query)
+    );
+    renderRouteList(filtered);
+}
+
+async function selectRoute(routeCode) {
+    if (!routeCode) return;
+
+    document.getElementById('view-route-list').style.display = 'none';
+    document.getElementById('view-route-detail').style.display = 'flex';
+
+    try {
+        const res = await fetch(`/api/route-details/${routeCode}`);
+        const json = await res.json();
+
+        if (json.success && json.stops) {
+            currentMeta = json.meta || {};
+            currentStopsData = json.stops;
+            currentRoadPolyline = json.road_polyline || [];
+            isReversed = false;
+
+            updateRouteDetailUI();
+        }
+    } catch (err) {
+        console.error("Error loading route details:", err);
+    }
+}
+
+function showRouteListView() {
+    document.getElementById('view-route-detail').style.display = 'none';
+    document.getElementById('view-route-list').style.display = 'flex';
+    clearMap();
+}
+
+function reverseRouteDirection() {
+    if (!currentStopsData || currentStopsData.length === 0) return;
+    isReversed = !isReversed;
+    currentStopsData.reverse();
+    if (currentRoadPolyline) currentRoadPolyline.reverse();
+    updateRouteDetailUI();
+}
+
+function updateRouteDetailUI() {
+    const meta = currentMeta;
+    document.getElementById('detail-route-badge').textContent = meta.route_code || 'B01';
+    document.getElementById('detail-route-name').textContent = meta.route_name || `${meta.route_code} Hattı`;
+    document.getElementById('detail-stop-count').textContent = `${currentStopsData.length} Durak`;
+
+    renderStopsDetailList(currentStopsData, meta.route_code);
+    renderMapStopsAndLine(currentStopsData, currentRoadPolyline, meta.color || '#2563eb');
+}
+
+function renderStopsDetailList(stops, mainRouteCode) {
+    const container = document.getElementById('detail-stops-list');
+    container.innerHTML = '';
+
+    stops.forEach((s, idx) => {
+        const item = document.createElement('div');
+        item.className = 'stop-row-item';
+        item.onclick = () => focusStopOnMap(idx, s.lat, s.lng, s.stop_name);
+
+        const lineList = s.lines || [mainRouteCode || 'B01', 'B30', 'B57'];
+        const lineBadgesHtml = lineList.map(c => {
+            const bgClass = c.startsWith('M') ? 'badge-blue' : (c.startsWith('T') ? 'badge-purple' : 'badge-orange');
+            return `<span class="badge-tag ${bgClass}">${c}</span>`;
+        }).join(' ');
+
+        const hasActiveBus = (idx === 0 || idx === Math.floor(stops.length / 2) || idx === stops.length - 2);
+        const iconType = mainRouteCode.startsWith('T') || mainRouteCode.startsWith('GR') ? 'fa-train-tram' : 'fa-bus';
+        const busBtnHtml = hasActiveBus ? `<div class="bus-present-icon" title="Canlı Sefer"><i class="fa-solid ${iconType}"></i></div>` : ``;
+
+        item.innerHTML = `
+            <div class="stop-left-content">
+                <div class="stop-blue-icon">
+                    <i class="fa-solid ${iconType}"></i>
+                </div>
+                <div>
+                    <div class="stop-title">${s.stop_name}</div>
+                    <div class="line-badges-row">${lineBadgesHtml}</div>
+                </div>
+            </div>
+            ${busBtnHtml}
+        `;
+        container.appendChild(item);
+
+        if (idx < stops.length - 1) {
+            const nextStop = stops[idx + 1];
+            const distKm = haversine(floatVal(s.lat), floatVal(s.lng), floatVal(nextStop.lat), floatVal(nextStop.lng));
+            const distMeters = Math.round(distKm * 1000);
+            const walkMins = Math.round((distKm / 5.0) * 60);
+
+            const isLongDistance = distKm >= 1.2;
+
+            const distDivider = document.createElement('div');
+            distDivider.style.cssText = "padding: 6px 16px 6px 42px; font-size: 0.76rem; font-weight: 700; color: #64748b; background: #f8fafc; border-bottom: 1px dashed #e2e8f0; display: flex; justify-content: space-between; align-items: center;";
+
+            if (isLongDistance) {
+                distDivider.innerHTML = `
+                    <span style="color: #dc2626; font-weight: 800;"><i class="fa-solid fa-triangle-exclamation"></i> Uzun Ara Mesafe: ${distKm.toFixed(2)} km (${distMeters}m)</span>
+                    <button style="background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 800; cursor: pointer;" onclick="requestStopForSegment('${mainRouteCode}', '${s.stop_name}', '${nextStop.stop_name}')">+ Durak Ekle</button>
+                `;
+            } else {
+                distDivider.innerHTML = `
+                    <span>Yol Mesafesi: ${distMeters} metre</span>
+                    <span>~${walkMins} dk yürüme</span>
+                `;
+            }
+            container.appendChild(distDivider);
+        }
+    });
+}
+
+function requestStopForSegment(routeCode, prevName, nextName) {
+    switchTab('tab-request-stop');
+    const reqSelect = document.getElementById('req-route-select');
+    if (reqSelect) reqSelect.value = routeCode;
+    document.getElementById('req-proposed-name').value = `${prevName} - ${nextName} Ara Durağı`;
+    document.getElementById('req-description').value = `Bu iki durak arasındaki karayolu yürüme mesafesi uzun olduğu için yeni ara durak eklenmesi talep edilmektedir.`;
+    document.getElementById('txt-nearest-prev').textContent = `Önceki Durak: ${prevName}`;
+    document.getElementById('txt-nearest-next').textContent = `Sonraki Durak: ${nextName}`;
+}
+
+function focusStopOnMap(markerIndex, lat, lng, stopName) {
+    if (!map) return;
+    map.flyTo([lat, lng], 16, { animate: true, duration: 1.2 });
+
+    if (currentMarkers && currentMarkers[markerIndex]) {
+        currentMarkers[markerIndex].openPopup();
+    }
+}
+
+function renderMapStopsAndLine(stops, roadPolyline, lineColor) {
+    clearMap();
+
+    if (!stops || stops.length === 0) return;
+
+    stops.forEach((s, idx) => {
+        const latLng = [s.lat, s.lng];
+
+        const isTerminal = (idx === 0 || idx === stops.length - 1);
+        const badgeBg = isTerminal ? 'linear-gradient(135deg, #10b981, #059669)' : (lineColor || 'linear-gradient(135deg, #ef4444, #dc2626)');
+
+        const iconType = (currentMeta.route_code && (currentMeta.route_code.startsWith('T') || currentMeta.route_code.startsWith('GR'))) ? 'fa-train-tram' : 'fa-bus';
+
+        const customIcon = L.divIcon({
+            className: 'custom-stop-badge-icon',
+            html: `<div style="background: ${badgeBg}; border: 2.5px solid white; width: 28px; height: 28px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; box-shadow: 0 3px 8px rgba(0,0,0,0.35); transition: transform 0.2s ease;"><i class="fa-solid ${iconType}" style="font-size: 10px;"></i></div>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+
+        const marker = L.marker(latLng, { icon: customIcon })
+            .bindPopup(`
+                <div style="font-family: 'Inter', sans-serif;">
+                    <div style="font-weight: 800; color: #0f172a; font-size: 0.95rem; margin-bottom: 2px;">${idx + 1}. ${s.stop_name}</div>
+                    <div style="font-size: 0.8rem; color: #64748b;">Durak ID: ${s.stop_id}</div>
+                </div>
+            `)
+            .addTo(map);
+
+        currentMarkers.push(marker);
+    });
+
+    const polylineCoords = (roadPolyline && roadPolyline.length > 2) ? roadPolyline : stops.map(s => [s.lat, s.lng]);
+
+    currentPolyline = L.polyline(polylineCoords, {
+        color: lineColor || '#2563eb',
+        weight: 6,
+        opacity: 0.95,
+        lineCap: 'round',
+        lineJoin: 'round'
+    }).addTo(map);
+
+    map.fitBounds(currentPolyline.getBounds(), { padding: [40, 40] });
+}
+
+function clearMap() {
+    currentMarkers.forEach(m => map.removeLayer(m));
+    currentMarkers = [];
+    busVehicleMarkers.forEach(m => map.removeLayer(m));
+    busVehicleMarkers = [];
+    if (currentPolyline) {
+        map.removeLayer(currentPolyline);
+        currentPolyline = null;
+    }
+    map.setView([37.0662, 37.3781], 13);
+}
+
+async function toggleGaziBisMapLayer() {
+    isGaziBisVisible = !isGaziBisVisible;
+    if (isGaziBisVisible) {
+        await loadAndRenderGaziBisMapMarkers();
+    } else {
+        clearGaziBisMapMarkers();
+    }
+}
+
+async function loadAndRenderGaziBisMapMarkers() {
+    try {
+        const res = await fetch('/api/gazibis-stations');
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            clearGaziBisMapMarkers();
+
+            json.data.forEach((st) => {
+                const customIcon = L.divIcon({
+                    className: 'gazibis-marker-icon',
+                    html: `<div style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; border: 2.5px solid white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.45);"><i class="fa-solid fa-bicycle"></i></div>`,
+                    iconSize: [34, 34],
+                    iconAnchor: [17, 17]
+                });
+
+                const marker = L.marker([st.lat, st.lng], { icon: customIcon })
+                    .bindPopup(`
+                        <div style="font-family: 'Inter', sans-serif; padding: 4px;">
+                            <div style="font-weight: 800; color: #6d28d9; font-size: 0.95rem; margin-bottom: 4px;"><i class="fa-solid fa-bicycle"></i> ${st.name}</div>
+                            <div style="font-size: 0.82rem; color: #059669; font-weight: 700;">${st.available_bikes} Boş Bisiklet Mevcut</div>
+                            <div style="font-size: 0.8rem; color: #64748b;">${st.available_docks} Boş Park Noktası</div>
+                        </div>
+                    `)
+                    .addTo(map);
+
+                gaziBisMarkers.push(marker);
+            });
+        }
+    } catch (err) {
+        console.error("Error loading GaziBis map markers:", err);
+    }
+}
+
+function clearGaziBisMapMarkers() {
+    gaziBisMarkers.forEach(m => map.removeLayer(m));
+    gaziBisMarkers = [];
+}
+
+async function loadGaziBisStations() {
+    try {
+        const res = await fetch('/api/gazibis-stations');
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            gazibisStationsList = json.data;
+
+            const select = document.getElementById('gbis-station-select');
+            const tbody = document.getElementById('table-gazibis-stations');
+            if (select) select.innerHTML = '';
+            if (tbody) tbody.innerHTML = '';
+
+            gazibisStationsList.forEach((st) => {
+                if (select) {
+                    const opt = new Option(`${st.name} (${st.available_bikes} Bisiklet Mevcut)`, st.id);
+                    select.add(opt);
+                }
+
+                if (tbody) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${st.name}</strong></td>
+                        <td><span style="background: #d1fae5; color: #065f46; font-weight: 800; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">${st.available_bikes} Bisiklet</span></td>
+                        <td><span style="background: #eff6ff; color: #1d4ed8; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">${st.available_docks} Park</span></td>
+                        <td><span style="background: #d1fae5; color: #047857; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">${st.status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Error loading GaziBis stations:", e);
+    }
+}
+
+async function updateAISimulator() {
+    const engineSize = document.getElementById('sim-engine').value;
+    document.getElementById('lbl-sim-engine').textContent = `${engineSize} L`;
+
+    const cylinders = document.getElementById('sim-cylinders').value;
+    const consumption = document.getElementById('sim-consumption').value;
+    const fuelType = document.getElementById('sim-fuel-type').value;
+
+    try {
+        const res = await fetch('/api/predict-co2-ml', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                engine_size: engineSize,
+                cylinders: cylinders,
+                fuel_consumption: consumption,
+                fuel_type: fuelType
+            })
+        });
+
+        const json = await res.json();
+
+        if (json.success) {
+            document.getElementById('sim-res-co2').textContent = `${json.predicted_co2_g_km} g/km`;
+
+            const badge = document.getElementById('sim-res-badge');
+            badge.textContent = json.eco_score;
+            badge.style.backgroundColor = json.score_color;
+
+            document.getElementById('sim-res-trees').textContent = `Günlük Telafi İçin: ${json.trees_daily} Ağaç Gerekli`;
+        }
+    } catch (err) {
+        console.error("Error running AI simulator:", err);
+    }
+}
+
+const animatedValueLabelsPlugin = {
+    id: 'animatedValueLabelsPlugin',
+    afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        chart.data.datasets.forEach((dataset, i) => {
+            const meta = chart.getDatasetMeta(i);
+            meta.data.forEach((bar, index) => {
+                const val = dataset.data[index];
+                if (val !== undefined && val !== null) {
+                    ctx.save();
+                    ctx.font = '800 11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    
+                    if (chart.config.options.indexAxis === 'y') {
+                        ctx.fillStyle = '#4c1d95';
+                        ctx.textAlign = 'left';
+                        const text = typeof val === 'number' && val > 100 ? `${val} g` : `%${val}`;
+                        ctx.fillText(text, bar.x + 8, bar.y + 4);
+                    } else {
+                        const colors = ['#dc2626', '#ea580c', '#ca8a04', '#2563eb', '#16a34a', '#059669'];
+                        ctx.fillStyle = colors[index % colors.length] || '#0f172a';
+                        const text = val > 0 ? `${val} g/km` : '0 (Sıfır)';
+                        ctx.fillText(text, bar.x, bar.y - 6);
+                    }
+                    ctx.restore();
+                }
+            });
+        });
+    }
+};
+
+function initMLCharts() {
+    const ctx1 = document.getElementById('featureChart');
+    if (ctx1) {
+        featureChart = new Chart(ctx1.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Yakıt Tüketimi (L/100km)', 'Motor Hacmi (L)', 'Silindir Sayısı', 'Yakıt Türü'],
+                datasets: [{
+                    label: 'Karar Ağırlığı (%)',
+                    data: [58.4, 25.8, 11.6, 4.2],
+                    backgroundColor: [
+                        'rgba(139, 92, 246, 0.9)',
+                        'rgba(168, 85, 247, 0.85)',
+                        'rgba(192, 132, 252, 0.8)',
+                        'rgba(233, 213, 255, 0.75)'
+                    ],
+                    borderColor: ['#7c3aed', '#9333ea', '#a855f7', '#c084fc'],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    hoverBackgroundColor: '#6d28d9'
+                }]
+            },
+            plugins: [animatedValueLabelsPlugin],
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: { left: 10, right: 45, top: 10, bottom: 10 }
+                },
+                animation: {
+                    duration: 1800,
+                    easing: 'easeOutQuart',
+                    delay: (context) => context.dataIndex * 200
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleFont: { family: 'Inter', weight: 'bold' },
+                        bodyFont: { family: 'Inter' },
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: function(ctx) {
+                                return ` Yapay Zekanın Verdiği Önem Ağırlığı: %${ctx.raw}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 70,
+                        ticks: { font: { family: 'Inter', weight: '700' } },
+                        grid: { color: 'rgba(226, 232, 240, 0.6)' }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Inter', weight: '700' } }
+                    }
+                }
+            }
+        });
+    }
+
+    const ctx2 = document.getElementById('fuelEmissionsChart');
+    if (ctx2) {
+        fuelEmissionsChart = new Chart(ctx2.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Benzin (Gasoline)', 'Dizel (Diesel)', 'E85 Ethanol', 'CNG Doğalgaz', 'Hibrit (Hybrid)', 'Elektrik (EV)'],
+                datasets: [{
+                    label: 'Ortalama CO2 Emisyonu (g/km)',
+                    data: [262, 238, 312, 195, 125, 0],
+                    backgroundColor: [
+                        'rgba(239, 68, 68, 0.85)',
+                        'rgba(249, 115, 22, 0.85)',
+                        'rgba(234, 179, 8, 0.85)',
+                        'rgba(59, 130, 246, 0.85)',
+                        'rgba(34, 197, 94, 0.85)',
+                        'rgba(16, 185, 129, 0.85)'
+                    ],
+                    borderColor: ['#dc2626', '#ea580c', '#ca8a04', '#2563eb', '#16a34a', '#059669'],
+                    borderWidth: 2,
+                    borderRadius: 10,
+                    barThickness: 32,
+                    hoverBorderWidth: 4
+                }]
+            },
+            plugins: [animatedValueLabelsPlugin],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: { left: 20, right: 25, top: 30, bottom: 10 }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeOutElastic',
+                    delay: (context) => context.dataIndex * 180
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleFont: { family: 'Inter', weight: 'bold' },
+                        bodyFont: { family: 'Inter' },
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: function(ctx) {
+                                return ` Ortalama Karbon Salınımı: ${ctx.raw} Gram CO2 / km`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 350,
+                        title: { display: true, text: 'CO2 Salınımı (g/km)', font: { weight: '800', family: 'Inter', size: 12 } },
+                        ticks: { font: { family: 'Inter', weight: '700' } },
+                        grid: { color: 'rgba(226, 232, 240, 0.6)' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Inter', weight: '700' } }
+                    }
+                }
+            }
+        });
+    }
+}
+
+async function submitGaziBisReservation() {
+    const stationId = document.getElementById('gbis-station-select').value;
+    const name = document.getElementById('gbis-name').value.trim() || 'Nefise Beyza';
+    const phone = document.getElementById('gbis-phone').replace(/\D/g, '');
+    const duration = document.getElementById('gbis-duration').value;
+
+    if (phone.length < 10) {
+        alert('Lütfen geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67).');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/reserve-gazibis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                station_id: stationId,
+                name: name,
+                phone: phone,
+                duration: duration
+            })
+        });
+
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            const d = json.data;
+            alert(`GaziBis Bisiklet Kiralama Randevunuz Oluşturuldu!\n\nRezervasyon Kodu: ${d.reservation_code}\nİstasyon: ${d.station_name}\nSüre: ${d.duration}\nAd Soyad: ${d.person_name}`);
+
+            document.getElementById('gbis-name').value = '';
+            document.getElementById('gbis-phone').value = '';
+        }
+    } catch (e) {
+        console.error("Error submitting GaziBis reservation:", e);
+    }
+}
+
+async function onRequestRouteSelectChanged() {
+    const routeCode = document.getElementById('req-route-select').value;
+    if (!routeCode || !requestMap) return;
+
+    try {
+        const res = await fetch(`/api/route-details/${routeCode}`);
+        const json = await res.json();
+
+        if (json.success && json.stops) {
+            clearRequestMapRoute();
+
+            currentRequestRouteStops = json.stops;
+            
+            if (currentRequestRouteStops.length >= 2) {
+                const s1 = currentRequestRouteStops[0];
+                const s2 = currentRequestRouteStops[1];
+                const dM = Math.round(haversine(floatVal(s1.lat), floatVal(s1.lng), floatVal(s2.lat), floatVal(s2.lng)) * 1000);
+
+                document.getElementById('txt-nearest-prev').textContent = `Önceki Durak: ${s1.stop_name}`;
+                document.getElementById('txt-nearest-next').textContent = `Sonraki Durak: ${s2.stop_name} (Ara Mesafe: ${dM}m)`;
+            }
+
+            currentRequestRouteStops.forEach(s => {
+                const sMarker = L.marker([s.lat, s.lng], {
+                    icon: L.divIcon({
+                        className: 'req-stop-dot',
+                        html: `<div style="background:#ef4444; width:14px; height:14px; border-radius:50%; border:2px solid white; box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: [14, 14]
+                    })
+                }).bindPopup(`<b>${s.stop_name}</b>`).addTo(requestMap);
+                requestMapStopMarkers.push(sMarker);
+            });
+
+            const poly = (json.road_polyline && json.road_polyline.length > 2) ? json.road_polyline : currentRequestRouteStops.map(s => [s.lat, s.lng]);
+            requestMapPolyline = L.polyline(poly, { color: '#f97316', weight: 5, opacity: 0.85 }).addTo(requestMap);
+            requestMap.fitBounds(requestMapPolyline.getBounds(), { padding: [30, 30] });
+        }
+    } catch (e) {
+        console.error("Error drawing request map route:", e);
+    }
+}
+
+function clearRequestMapRoute() {
+    requestMapStopMarkers.forEach(m => requestMap.removeLayer(m));
+    requestMapStopMarkers = [];
+    if (requestMapPolyline) {
+        requestMap.removeLayer(requestMapPolyline);
+        requestMapPolyline = null;
+    }
+}
+
+async function toggleCardCenters() {
+    isCardCentersVisible = !isCardCentersVisible;
+    
+    if (isCardCentersVisible) {
+        await loadAndRenderCardCenters();
+    } else {
+        clearCardCenters();
+    }
+}
+
+async function loadAndRenderCardCenters() {
+    try {
+        const res = await fetch('/api/card-centers');
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            clearCardCenters();
+
+            json.data.forEach((c) => {
+                const customIcon = L.divIcon({
+                    className: 'card-center-icon',
+                    html: `<div style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);"><i class="fa-regular fa-id-card"></i></div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+
+                const marker = L.marker([c.lat, c.lng], { icon: customIcon })
+                    .bindPopup(`
+                        <div style="font-family: 'Inter', sans-serif;">
+                            <div style="font-weight: 800; color: #6d28d9; font-size: 0.95rem; margin-bottom: 2px;">${c.name}</div>
+                            <div style="font-size: 0.8rem; color: #64748b;">Gaziantep Toplu Taşıma Kart İşlem Noktası</div>
+                        </div>
+                    `)
+                    .addTo(map);
+
+                cardCenterMarkers.push(marker);
+            });
+        }
+    } catch (err) {
+        console.error("Error loading card centers:", err);
+    }
+}
+
+function clearCardCenters() {
+    cardCenterMarkers.forEach(m => map.removeLayer(m));
+    cardCenterMarkers = [];
+}
+
+function openScheduleModal() {
+    const modal = document.getElementById('schedule-modal');
+    const code = currentMeta.route_code || 'B01';
+    const name = currentMeta.route_name || 'GAZİKENT-ENSAR SİTESİ';
+
+    document.getElementById('modal-route-code').textContent = `${code} Sefer Saatleri`;
+    document.getElementById('modal-route-name').textContent = name;
+
+    modal.classList.add('active');
+}
+
+function closeScheduleModal() {
+    document.getElementById('schedule-modal').classList.remove('active');
+}
+
+function showSuccessModal(data) {
+    const modal = document.getElementById('success-modal');
+    document.getElementById('succ-modal-id').textContent = data.request_id || 'TLP-20260724-8256';
+    document.getElementById('succ-modal-route').textContent = data.route_code || 'B01';
+
+    const pText = document.getElementById('txt-nearest-prev').textContent.replace('Önceki Durak:', '').trim();
+    const nText = document.getElementById('txt-nearest-next').textContent.replace('Sonraki Durak:', '').trim();
+
+    document.getElementById('succ-modal-prev').textContent = pText || 'Tespit Edildi';
+    document.getElementById('succ-modal-next').textContent = nText || 'Tespit Edildi';
+
+    modal.classList.add('active');
+}
+
+function closeSuccessModal() {
+    document.getElementById('success-modal').classList.remove('active');
+}
+
+async function loadStops() {
+    try {
+        const res = await fetch('/api/stops');
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            allStops = json.data;
+
+            populateStopDropdowns(allStops);
+            calculateCO2();
+        }
+    } catch (err) {
+        console.error("Error loading all stops:", err);
+    }
+}
+
+function populateStopDropdowns(stops) {
+    const selectStart = document.getElementById('calc-start-stop');
+    const selectEnd = document.getElementById('calc-end-stop');
+
+    selectStart.innerHTML = '';
+    selectEnd.innerHTML = '';
+
+    stops.forEach((s) => {
+        const opt1 = new Option(`${s.stop_id} - ${s.stop_name}`, s.stop_id);
+        const opt2 = new Option(`${s.stop_id} - ${s.stop_name}`, s.stop_id);
+        selectStart.add(opt1);
+        selectEnd.add(opt2);
+    });
+
+    if (selectEnd.options.length > 5) selectEnd.selectedIndex = 5;
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+async function submitStopRequest() {
+    const routeCode = document.getElementById('req-route-select').value;
+    const proposedName = document.getElementById('req-proposed-name').value.trim() || 'Yeni Ara Durak';
+    const description = document.getElementById('req-description').value.trim() || 'Bu otobüs hattında yürüme mesafesi uzun olduğu için yeni durak talebi.';
+
+    try {
+        const res = await fetch('/api/request-new-stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                route_code: routeCode,
+                proposed_stop_name: proposedName,
+                description: description
+            })
+        });
+
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            const d = json.data;
+            showSuccessModal(d);
+
+            const tbody = document.getElementById('table-submitted-requests');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><code>${d.request_id}</code></td>
+                <td><span class="route-code-badge" style="padding: 2px 6px; font-size: 0.75rem;">${d.route_code}</span></td>
+                <td><strong>${d.proposed_stop_name}</strong></td>
+                <td>${d.description}</td>
+                <td><span style="background: #d1fae5; color: #065f46; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">Talep Alındı</span></td>
+            `;
+            tbody.insertBefore(tr, tbody.firstChild);
+
+            document.getElementById('req-proposed-name').value = '';
+            document.getElementById('req-description').value = '';
+        }
+    } catch (err) {
+        console.error("Error submitting stop request:", err);
+    }
+}
+
+function onModeChanged() {
+    const mode = document.getElementById('calc-mode').value;
+    const fuelGroup = document.getElementById('fuel-group');
+
+    if (mode === 'Otobüs') {
+        fuelGroup.style.display = 'block';
+    } else {
+        fuelGroup.style.display = 'none';
+    }
+    calculateCO2();
+}
+
+async function calculateCO2() {
+    const mode = document.getElementById('calc-mode').value;
+    const busModel = document.getElementById('calc-bus-model').value;
+    const startStopId = document.getElementById('calc-start-stop').value;
+    const endStopId = document.getElementById('calc-end-stop').value;
+
+    const startText = document.getElementById('calc-start-stop').options[document.getElementById('calc-start-stop').selectedIndex]?.text || '10002 - Demokrasi Meydanı';
+    const endText = document.getElementById('calc-end-stop').options[document.getElementById('calc-end-stop').selectedIndex]?.text || '10005 - Karataş 1. Bölge Çarşı';
+
+    try {
+        const res = await fetch('/api/calculate-co2', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: mode,
+                bus_model: busModel,
+                start_stop_id: startStopId,
+                end_stop_id: endStopId
+            })
+        });
+
+        const json = await res.json();
+
+        if (json.success && json.result) {
+            const r = json.result;
+
+            const dist = r.distance_km || 5.4;
+            const busCo2 = (r.total_vehicle_co2_kg || 15.12);
+            const tramCo2 = (busCo2 * 0.14).toFixed(2);
+            const savedCo2 = (busCo2 - tramCo2).toFixed(2);
+            const treesEarned = (savedCo2 * 1.36).toFixed(1);
+
+            document.getElementById('cmp-distance-header').textContent = `Mesafe: ${dist} km`;
+            document.getElementById('cmp-route-subtitle').textContent = `${startText} ➔ ${endText}`;
+
+            document.getElementById('cmp-bus-co2').textContent = `${busCo2} kg CO2`;
+            document.getElementById('cmp-bus-time').textContent = `~${Math.round(dist * 3.3)} dk seyahat`;
+
+            document.getElementById('cmp-tram-co2').textContent = `${tramCo2} kg CO2`;
+            document.getElementById('cmp-tram-time').textContent = `~${Math.round(dist * 2.6)} dk seyahat`;
+
+            document.getElementById('cmp-saving-text').textContent = `Düşük emisyonlu mod seçimi ile ${savedCo2} kg CO2 tasarruf sağlandı.`;
+            document.getElementById('cmp-tree-badge').innerHTML = `<i class="fa-solid fa-tree"></i> ${treesEarned} Ağaç Kazancı`;
+
+            document.getElementById('txt-traffic-percent').textContent = `%${r.traffic_pct} • Akıcı Şehir Trafiği`;
+            document.getElementById('txt-traffic-factor').textContent = `Dur-Kalk Etkisi: CO2 Emisyonu +%${r.traffic_increase_pct}`;
+
+            updateCO2Charts(dist, r.traffic_pct);
+        }
+    } catch (err) {
+        console.error("Error calculating CO2:", err);
+    }
+}
+
+function initCharts() {
+    const ctx1 = document.getElementById('co2Chart').getContext('2d');
+    co2Chart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: [
+                "Özel Otomobil",
+                "MAN Körüklü",
+                "MAN Solo",
+                "Otokar 10M Doruk",
+                "Otokar 9M Doruk",
+                "Temsa Prestij",
+                "Tramvay",
+                "Elektrikli Otobüs"
+            ],
+            datasets: [{
+                label: 'Toplam Sefer CO2 Salınımı (Gram CO2)',
+                data: [1430, 2535, 1722, 1365, 1267, 942, 585, 0],
+                backgroundColor: [
+                    '#ef4444',
+                    '#f97316',
+                    '#fb923c',
+                    '#eab308',
+                    '#84cc16',
+                    '#22c55e',
+                    '#3b82f6',
+                    '#10b981'
+                ],
+                borderRadius: 8,
+                barThickness: 16
+            }]
+        },
+        plugins: [animatedValueLabelsPlugin],
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: { left: 10, right: 50, top: 10, bottom: 10 }
+            },
+            animation: {
+                duration: 1600,
+                easing: 'easeOutQuart'
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return ` ${ctx.raw} Gram Toplam Araç Karbon Salınımı`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { font: { family: 'Inter', weight: '700' } },
+                    grid: { color: '#f1f5f9' }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter', weight: '700' } }
+                }
+            }
+        }
+    });
+
+    const ctx2 = document.getElementById('hourlyChart').getContext('2d');
+    hourlyChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: ["06:00", "07:00", "08:00 (Yoğun)", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00 (Yoğun)", "19:00", "20:00", "21:00", "22:00", "23:00", "24:00"],
+            datasets: [{
+                label: 'Saatlik Filo CO2 Salınımı (kg CO2 / saat)',
+                data: [120, 380, 490, 340, 220, 190, 260, 240, 210, 230, 310, 440, 520, 410, 280, 180, 110, 60, 30],
+                borderColor: '#f97316',
+                backgroundColor: 'rgba(249, 115, 22, 0.12)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                pointBackgroundColor: '#ea580c'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: { left: 10, right: 20, top: 15, bottom: 10 }
+            },
+            animation: {
+                duration: 1800,
+                easing: 'easeInOutQuad'
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return ` Saat ${ctx.label}: ${ctx.raw} kg Toplam Şehir Otobüs Karbonu`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Filo CO2 (kg/Saat)', font: { weight: '800', family: 'Inter', size: 12 } },
+                    ticks: { font: { family: 'Inter', weight: '700' } },
+                    grid: { color: '#f1f5f9' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { weight: '700', family: 'Inter' } }
+                }
+            }
+        }
+    });
+}
+
+function updateCO2Charts(distanceKm, trafficPct) {
+    if (!co2Chart || !hourlyChart) return;
+    const dist = distanceKm || 5.0;
+    const pct = trafficPct || 38;
+
+    const trafficFactor = 1.0 + (pct / 250.0);
+    const values = [
+        Math.round(220.0 * dist * trafficFactor),  // Özel otomobil
+        Math.round(390.0 * dist * trafficFactor),  // MAN Körüklü
+        Math.round(265.0 * dist * trafficFactor),  // MAN Solo
+        Math.round(210.0 * dist * trafficFactor),  // Otokar 10M
+        Math.round(195.0 * dist * trafficFactor),  // Otokar 9M
+        Math.round(145.0 * dist * trafficFactor),  // Temsa Prestij
+        Math.round(90.0 * dist * trafficFactor),   // Tramvay
+        0.0                                         // 18M Elektrikli
+    ];
+
+    co2Chart.data.datasets[0].data = values;
+    co2Chart.update();
+
+    const scale = (dist / 5.0);
+    const baseCurve = [120, 380, 490, 340, 220, 190, 260, 240, 210, 230, 310, 440, 520, 410, 280, 180, 110, 60, 30];
+    const scaledCurve = baseCurve.map(v => Math.round(v * scale));
+
+    hourlyChart.data.datasets[0].data = scaledCurve;
+    hourlyChart.update();
+}
