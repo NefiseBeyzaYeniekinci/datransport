@@ -45,6 +45,9 @@
                 <button class="nav-tab" onclick="switchTab('tab-gazibis')">
                     <i class="fa-solid fa-bicycle"></i> GaziBis Kirala & Randevu
                 </button>
+                <button class="nav-tab" onclick="switchTab('tab-parking')">
+                    <i class="fa-solid fa-square-parking" style="color: #2563eb;"></i> Akıllı Otopark & Rezervasyon
+                </button>
                 <button class="nav-tab" onclick="switchTab('tab-data')">
                     <i class="fa-solid fa-brain"></i> Veri & AI Simülatörü
                 </button>
@@ -110,6 +113,7 @@
                         <button onclick="selectRoute('T3')" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);"><i class="fa-solid fa-circle" style="color: #dbeafe; margin-right: 4px;"></i> T3 Tramvay</button>
                         <button onclick="selectRoute('GR01')" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: #0f172a; background: linear-gradient(135deg, #facc15, #eab308); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(234, 179, 8, 0.35);"><i class="fa-solid fa-train" style="margin-right: 4px;"></i> GR01 Gaziray</button>
                         <button onclick="toggleGaziBisMapLayer()" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(139, 92, 246, 0.35);"><i class="fa-solid fa-bicycle" style="margin-right: 4px;"></i> GaziBis</button>
+                        <button onclick="toggleParkingMapLayer()" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #0284c7, #0369a1); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);"><i class="fa-solid fa-square-parking" style="margin-right: 4px;"></i> Otoparklar</button>
                         
                         <div style="width: 1px; height: 24px; background: #cbd5e1; margin: 0 4px;"></div>
                         
@@ -491,7 +495,84 @@
             </div>
         </section>
 
-        <!-- TAB 4: VERİ & AI SIMULATOR + 5 ADET CSV EXPORT RAPOR SEÇENEĞİ -->
+        <!-- TAB 6: GAZİANTEP AKILLI OTOPARK DOLULUK & REZERVASYON -->
+        <section id="tab-parking" class="tab-content">
+            <div class="calculator-grid">
+                <!-- LEFT COLUMN: PARKING RESERVATION FORM -->
+                <div class="card" style="border: 2px solid #0284c7; background: linear-gradient(135deg, #ffffff, #f0f9ff);">
+                    <div class="card-title" style="color: #0369a1;">
+                        <i class="fa-solid fa-square-parking" style="color: #0284c7;"></i>
+                        Akıllı Otopark Park Yeri Rezervasyonu Yap
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                        Aşağıdaki formu doldurarak boş otopark konumlarında aracınız için park yerini önceden ayırtın, şehir merkezinde yer arama derdine son verin!
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">1. Otopark Konumu Seçiniz:</label>
+                        <select id="prk-select-lot" class="form-select"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">2. Araç Plaka Numarası:</label>
+                        <input type="text" id="prk-plate" class="form-input" placeholder="Örn: 27 ABC 123" style="text-transform: uppercase;" maxlength="10">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">3. Sürücü Adı Soyadı:</label>
+                        <input type="text" id="prk-driver-name" class="form-input" placeholder="Örn: Ahmet Yılmaz">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display: flex; justify-content: space-between;">
+                            <span>4. İletişim Telefonu:</span>
+                            <span style="font-size: 0.75rem; color: #0284c7; font-weight: 700;">Format: 05XX XXX XX XX</span>
+                        </label>
+                        <input type="tel" id="prk-phone" class="form-input" maxlength="14" placeholder="05XX XXX XX XX" oninput="formatPhoneNumber(this)">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">5. Tahmini Park Süresi:</label>
+                        <select id="prk-duration" class="form-select">
+                            <option value="1 Saat">1 Saat Park (Standart)</option>
+                            <option value="2 Saat" selected>2 Saat Park</option>
+                            <option value="4 Saat">4 Saat Park</option>
+                            <option value="Tam Gün">Tam Gün (Abonelik / Tüm Gün)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn-primary" style="background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="submitParkingReservation()">
+                        <i class="fa-solid fa-square-parking"></i> Otopark Park Yerimi Rezerve Et
+                    </button>
+                </div>
+
+                <!-- RIGHT COLUMN: LIVE PARKING OCCUPANCY DASHBOARD -->
+                <div class="card">
+                    <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span><i class="fa-solid fa-square-parking" style="color: #0284c7;"></i> Gaziantep Canlı Otopark Doluluk Oranları</span>
+                        <span style="background: #e0f2fe; color: #0369a1; padding: 2px 10px; border-radius: 12px; font-weight: 800; font-size: 0.78rem;">Canlı Belediye API</span>
+                    </div>
+
+                    <div class="table-container" style="max-height: 480px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Otopark Adı & Tipi</th>
+                                    <th>Doluluk Oranı</th>
+                                    <th>Boş Yer</th>
+                                    <th>Kapasite</th>
+                                    <th>Ücret</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-parking-lots"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: VERİ & AI SIMULATOR + 6 ADET CSV EXPORT RAPOR SEÇENEĞİ -->
         <section id="tab-data" class="tab-content">
             <div class="calculator-grid" style="margin-bottom: 1.5rem;">
                 <!-- LEFT SIDE: AI SIMULATOR -->
@@ -614,10 +695,10 @@
             <div class="card" style="border: 2px solid #0284c7; background: linear-gradient(135deg, #f0f9ff, #e0f2fe);">
                 <div class="card-title" style="color: #0369a1; display: flex; justify-content: space-between; align-items: center;">
                     <span><i class="fa-solid fa-file-csv" style="color: #0284c7;"></i> Veri Setleri & Rapor Dışa Aktarma Merkezi (CSV Export)</span>
-                    <span style="background: #bae6fd; color: #0369a1; padding: 2px 10px; border-radius: 12px; font-weight: 800; font-size: 0.78rem;">5 Farklı CSV İndirme Formatı</span>
+                    <span style="background: #bae6fd; color: #0369a1; padding: 2px 10px; border-radius: 12px; font-weight: 800; font-size: 0.78rem;">6 Farklı CSV İndirme Formatı</span>
                 </div>
                 <div style="font-size: 0.85rem; color: #0369a1; margin-bottom: 1.25rem;">
-                    Gaziantep ulaşım verilerini, durak GPS konumlarını, GaziBis canlı istasyonlarını ve otobüs filosu emisyon kataloglarını tek tıkla CSV dosyası olarak bilgisayarınıza indirebilirsiniz:
+                    Gaziantep ulaşım verilerini, durak GPS konumlarını, otopark doluluk oranlarını, GaziBis canlı istasyonlarını ve otobüs filosu emisyon kataloglarını tek tıkla CSV dosyası olarak bilgisayarınıza indirebilirsiniz:
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
@@ -668,6 +749,16 @@
                         </div>
                         <button onclick="downloadKaggleDatasetCSV()" style="background: linear-gradient(135deg, #ec4899, #be185d); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                             <i class="fa-solid fa-download"></i> ML Veri Setini İndir (CSV)
+                        </button>
+                    </div>
+
+                    <div style="background: white; border: 1px solid #7dd3fc; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-weight: 800; color: #0284c7; font-size: 0.92rem; margin-bottom: 4px;">6. Otopark Doluluk & Konum Verisi</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">Otopark Adları, Boş/Dolu Kapasite, Doluluk %</div>
+                        </div>
+                        <button onclick="downloadParkingCSV()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fa-solid fa-download"></i> Otopark Verisini İndir (CSV)
                         </button>
                     </div>
                 </div>

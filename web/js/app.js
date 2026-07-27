@@ -11,8 +11,11 @@ let currentPolyline = null;
 let busVehicleMarkers = [];
 let cardCenterMarkers = [];
 let gaziBisMarkers = [];
+let parkingMarkers = [];
+
 let isCardCentersVisible = false;
 let isGaziBisVisible = false;
+let isParkingVisible = false;
 
 // Real Street Distance Ruler Tool State
 let isRulerActive = false;
@@ -28,6 +31,7 @@ let fuelEmissionsChart = null;
 let allStops = [];
 let allRoutes = [];
 let gazibisStationsList = [];
+let parkingLotsList = [];
 let isReversed = false;
 let currentStopsData = [];
 let currentRoadPolyline = [];
@@ -39,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadRoutes();
     loadStops();
     loadGaziBisStations();
+    loadParkingLots();
     initCharts();
     initMLCharts();
     updateAISimulator();
@@ -116,6 +121,15 @@ function downloadGaziBisCSV() {
     triggerCSVDownload("GaziBis_Canlı_İstasyon_Müsaitlik_Verisi.csv", csv);
 }
 
+function downloadParkingCSV() {
+    if (!parkingLotsList || parkingLotsList.length === 0) return;
+    let csv = "Otopark ID,Otopark Adı,Tipi,Enlem,Boylam,Toplam Kapasite,Boş Park Yeri,Dolu Park Yeri,Doluluk Oranı (%),Ücret,Durum\n";
+    parkingLotsList.forEach(pk => {
+        csv += `"${pk.id}","${pk.name}","${pk.type}",${pk.lat},${pk.lng},${pk.total_capacity},${pk.empty_spots},${pk.filled_spots},${pk.occupancy_pct},"${pk.fee_per_hour}","${pk.status}"\n`;
+    });
+    triggerCSVDownload("Gaziantep_Canlı_Otopark_Doluluk_Verisi.csv", csv);
+}
+
 function downloadStopRequestsCSV() {
     let csv = "Talep ID,Hat Kodu,Önerilen Durak Adı,Talep Açıklaması,Durum,Tarih\n";
     csv += '"TLP-20260724-8492","B01","TOKİ 2. Etap Ara Durağı","Gazikent yakınında ara durak talebi","Talep Alındı","2026-07-24"\n';
@@ -171,7 +185,7 @@ function initMap() {
     map = L.map('map-container').setView(gaziantepCoords, 13);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 19
     }).addTo(map);
@@ -281,7 +295,7 @@ function initRequestMap() {
     requestMap = L.map('request-map-container').setView(gaziantepCoords, 13);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; OpenStreetMap contributors',
         subdomains: 'abcd',
         maxZoom: 19
     }).addTo(requestMap);
@@ -650,6 +664,154 @@ async function loadAndRenderGaziBisMapMarkers() {
 function clearGaziBisMapMarkers() {
     gaziBisMarkers.forEach(m => map.removeLayer(m));
     gaziBisMarkers = [];
+}
+
+// OTOPARK HARİTA KATMANI & YÜKLEME
+async function toggleParkingMapLayer() {
+    isParkingVisible = !isParkingVisible;
+    if (isParkingVisible) {
+        await loadAndRenderParkingMapMarkers();
+    } else {
+        clearParkingMapMarkers();
+    }
+}
+
+async function loadAndRenderParkingMapMarkers() {
+    try {
+        const res = await fetch('/api/parking-lots');
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            clearParkingMapMarkers();
+
+            json.data.forEach((pk) => {
+                const statusColor = pk.occupancy_pct > 85 ? '#ef4444' : (pk.occupancy_pct > 65 ? '#eab308' : '#0284c7');
+                const customIcon = L.divIcon({
+                    className: 'parking-marker-icon',
+                    html: `<div style="background: linear-gradient(135deg, ${statusColor}, #0369a1); color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; border: 2.5px solid white; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.45);">P</div>`,
+                    iconSize: [34, 34],
+                    iconAnchor: [17, 17]
+                });
+
+                const marker = L.marker([pk.lat, pk.lng], { icon: customIcon })
+                    .bindPopup(`
+                        <div style="font-family: 'Inter', sans-serif; padding: 4px;">
+                            <div style="font-weight: 800; color: #0284c7; font-size: 0.95rem; margin-bottom: 4px;"><i class="fa-solid fa-square-parking"></i> ${pk.name}</div>
+                            <div style="font-size: 0.82rem; color: #059669; font-weight: 700;">${pk.empty_spots} Boş Park Yeri / Kapa: ${pk.total_capacity}</div>
+                            <div style="font-size: 0.8rem; color: #64748b;">Doluluk Oranı: %${pk.occupancy_pct} • ${pk.fee_per_hour}</div>
+                            <button onclick="selectParkingLotForReservation(${pk.id})" style="margin-top: 8px; width: 100%; background: #0284c7; color: white; border: none; padding: 6px; border-radius: 8px; font-weight: 800; font-size: 0.78rem; cursor: pointer;">Park Yeri Rezerve Et</button>
+                        </div>
+                    `)
+                    .addTo(map);
+
+                parkingMarkers.push(marker);
+            });
+        }
+    } catch (err) {
+        console.error("Error loading Parking map markers:", err);
+    }
+}
+
+function clearParkingMapMarkers() {
+    parkingMarkers.forEach(m => map.removeLayer(m));
+    parkingMarkers = [];
+}
+
+async function loadParkingLots() {
+    try {
+        const res = await fetch('/api/parking-lots');
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            parkingLotsList = json.data;
+
+            const select = document.getElementById('prk-select-lot');
+            const tbody = document.getElementById('table-parking-lots');
+            if (select) select.innerHTML = '';
+            if (tbody) tbody.innerHTML = '';
+
+            parkingLotsList.forEach((pk) => {
+                if (select) {
+                    const opt = new Option(`${pk.name} (${pk.empty_spots} Boş Yer - Doluluk %${pk.occupancy_pct})`, pk.id);
+                    select.add(opt);
+                }
+
+                if (tbody) {
+                    const tr = document.createElement('tr');
+                    const badgeBg = pk.occupancy_pct > 85 ? '#fef2f2' : (pk.occupancy_pct > 65 ? '#fefce8' : '#ecfdf5');
+                    const badgeTextColor = pk.occupancy_pct > 85 ? '#991b1b' : (pk.occupancy_pct > 65 ? '#854d0e' : '#065f46');
+                    
+                    tr.innerHTML = `
+                        <td><strong>${pk.name}</strong><br><span style="font-size:0.75rem; color:#64748b;">${pk.type}</span></td>
+                        <td>
+                            <div style="font-size: 0.8rem; font-weight: 800; color: ${badgeTextColor}; margin-bottom: 2px;">%${pk.occupancy_pct}</div>
+                            <div style="width: 80px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                                <div style="width: ${pk.occupancy_pct}%; height: 100%; background: ${badgeTextColor};"></div>
+                            </div>
+                        </td>
+                        <td><span style="background: #d1fae5; color: #065f46; font-weight: 800; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">${pk.empty_spots} Boş</span></td>
+                        <td><span style="background: #eff6ff; color: #1d4ed8; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">${pk.total_capacity} Araç</span></td>
+                        <td><span style="font-size: 0.78rem; font-weight: 700; color: #475569;">${pk.fee_per_hour}</span></td>
+                        <td><span style="background: ${badgeBg}; color: ${badgeTextColor}; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">${pk.status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Error loading Parking lots:", e);
+    }
+}
+
+function selectParkingLotForReservation(parkingId) {
+    switchTab('tab-parking');
+    const select = document.getElementById('prk-select-lot');
+    if (select) select.value = parkingId;
+}
+
+async function submitParkingReservation() {
+    const parkingId = document.getElementById('prk-select-lot').value;
+    const plate = document.getElementById('prk-plate').value.trim().toUpperCase();
+    const driverName = document.getElementById('prk-driver-name').value.trim() || 'Ahmet Yılmaz';
+    const phone = document.getElementById('prk-phone').value.replace(/\D/g, '');
+    const duration = document.getElementById('prk-duration').value;
+
+    if (!plate || plate.length < 5) {
+        alert('Lütfen geçerli bir araç plaka numarası giriniz (Örn: 27 ABC 123).');
+        return;
+    }
+
+    if (phone.length < 10) {
+        alert('Lütfen geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67).');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/reserve-parking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                parking_id: parkingId,
+                driver_name: driverName,
+                plate_number: plate,
+                phone: phone,
+                duration: duration
+            })
+        });
+
+        const json = await res.json();
+
+        if (json.success && json.data) {
+            const d = json.data;
+            alert(`Otopark Araç Park Yeri Randevunuz Başarıyla Oluşturuldu!\n\nRezervasyon Kodu: ${d.reservation_code}\nOtopark: ${d.parking_name}\nPlaka No: ${d.plate_number}\nSürücü: ${d.driver_name}\nSüre: ${d.duration}`);
+
+            document.getElementById('prk-plate').value = '';
+            document.getElementById('prk-driver-name').value = '';
+            document.getElementById('prk-phone').value = '';
+        }
+    } catch (e) {
+        console.error("Error submitting Parking reservation:", e);
+    }
 }
 
 async function loadGaziBisStations() {

@@ -126,6 +126,113 @@ GAZIBIS_STATIONS = [
     {"id": 8, "name": "Botanık Parkı GaziBis İstasyonu", "lat": 37.0450, "lng": 37.3180, "available_bikes": 9, "available_docks": 9, "status": "Aktif"}
 ]
 
+GAZIANTEP_PARKING_LOTS = [
+    {
+        "id": 1,
+        "name": "Sanko Park AVM Katlı Otoparkı",
+        "lat": 37.0620,
+        "lng": 37.3630,
+        "total_capacity": 1200,
+        "empty_spots": 342,
+        "filled_spots": 858,
+        "occupancy_pct": 71.5,
+        "fee_per_hour": "Ücretsiz (İlk 3 Saat)",
+        "type": "Kapalı Katlı Otopark",
+        "status": "Boş Yer Var"
+    },
+    {
+        "id": 2,
+        "name": "15 Temmuz Demokrasi Meydanı Yeraltı Otoparkı",
+        "lat": 37.0710,
+        "lng": 37.3800,
+        "total_capacity": 650,
+        "empty_spots": 84,
+        "filled_spots": 566,
+        "occupancy_pct": 87.1,
+        "fee_per_hour": "25 TL / Saat",
+        "type": "Yeraltı Otomatik Otopark",
+        "status": "Yoğun"
+    },
+    {
+        "id": 3,
+        "name": "Gazi Muhtar Paşa Katlı Otoparkı",
+        "lat": 37.0685,
+        "lng": 37.3770,
+        "total_capacity": 450,
+        "empty_spots": 156,
+        "filled_spots": 294,
+        "occupancy_pct": 65.3,
+        "fee_per_hour": "20 TL / Saat",
+        "type": "Katlı Otopark",
+        "status": "Boş Yer Var"
+    },
+    {
+        "id": 4,
+        "name": "Balıklı Parkı Açık Otoparkı",
+        "lat": 37.0616,
+        "lng": 37.3799,
+        "total_capacity": 280,
+        "empty_spots": 18,
+        "filled_spots": 262,
+        "occupancy_pct": 93.6,
+        "fee_per_hour": "20 TL / Saat",
+        "type": "Açık Otopark",
+        "status": "Dolu"
+    },
+    {
+        "id": 5,
+        "name": "Gaziantep Gar Katlı Otoparkı",
+        "lat": 37.0738,
+        "lng": 37.3827,
+        "total_capacity": 500,
+        "empty_spots": 210,
+        "filled_spots": 290,
+        "occupancy_pct": 58.0,
+        "fee_per_hour": "15 TL / Saat",
+        "type": "Katlı Otopark",
+        "status": "Boş Yer Var"
+    },
+    {
+        "id": 6,
+        "name": "Gaziantep Üniversitesi Kampüs Otoparkı",
+        "lat": 37.0354,
+        "lng": 37.3235,
+        "total_capacity": 800,
+        "empty_spots": 415,
+        "filled_spots": 385,
+        "occupancy_pct": 48.1,
+        "fee_per_hour": "Ücretsiz",
+        "type": "Açık Otopark",
+        "status": "Boş Yer Var"
+    },
+    {
+        "id": 7,
+        "name": "Forum Gaziantep Katlı Otoparkı",
+        "lat": 37.0780,
+        "lng": 37.3680,
+        "total_capacity": 950,
+        "empty_spots": 280,
+        "filled_spots": 670,
+        "occupancy_pct": 70.5,
+        "fee_per_hour": "Ücretsiz (İlk 2 Saat)",
+        "type": "Kapalı Katlı Otopark",
+        "status": "Boş Yer Var"
+    },
+    {
+        "id": 8,
+        "name": "Şahinbey Parkı Açık Otoparkı",
+        "lat": 37.0360,
+        "lng": 37.3560,
+        "total_capacity": 350,
+        "empty_spots": 175,
+        "filled_spots": 175,
+        "occupancy_pct": 50.0,
+        "fee_per_hour": "15 TL / Saat",
+        "type": "Açık Otopark",
+        "status": "Boş Yer Var"
+    }
+]
+
 SPECIFIC_ROUTE_STOPS = {
     "T1": T1_EXACT_STOPS,
     "T2": T2_EXACT_STOPS,
@@ -221,6 +328,107 @@ def get_routes():
 @app.route("/api/gazibis-stations", methods=["GET"])
 def get_gazibis_stations():
     return jsonify({"success": True, "count": len(GAZIBIS_STATIONS), "data": clean_dict_strings(GAZIBIS_STATIONS)})
+
+# API: GAZİANTEP OTOPARK DOLULUK DURUMLARI & KONUMLARI
+@app.route("/api/parking-lots", methods=["GET"])
+def get_parking_lots():
+    url = "https://acikveriapi.gaziantep.bel.tr/api/Ulasim/OtoparkDolulukDurumu"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept': 'application/json, text/plain, */*'
+    }
+    
+    live_lots = []
+    try:
+        r = requests.get(url, headers=headers, timeout=4)
+        if r.status_code == 200:
+            text = decode_raw_bytes(r.content)
+            res_json = json.loads(text)
+            if res_json.get("success") and "data" in res_json:
+                data = res_json["data"]
+                if isinstance(data, str):
+                    data = json.loads(data)
+                if isinstance(data, list):
+                    for idx, item in enumerate(data):
+                        name = fix_mojibake(item.get("otoparkAdi", item.get("adi", f"Otopark #{idx+1}")))
+                        lat = float(item.get("enlem", 37.0662))
+                        lng = float(item.get("boylam", 37.3781))
+                        total_cap = int(item.get("toplamKapasite", item.get("kapasite", 300)))
+                        empty_cap = int(item.get("bosKapasite", item.get("bosKapasiteSayisi", 45)))
+                        filled_cap = total_cap - empty_cap if total_cap >= empty_cap else 0
+                        occ_pct = round((filled_cap / total_cap) * 100.0, 1) if total_cap > 0 else 50.0
+                        
+                        status = "Boş Yer Var" if empty_cap > 30 else ("Yoğun" if empty_cap > 5 else "Dolu")
+                        
+                        live_lots.append({
+                            "id": idx + 1,
+                            "name": name,
+                            "lat": lat,
+                            "lng": lng,
+                            "total_capacity": total_cap,
+                            "empty_spots": empty_cap,
+                            "filled_spots": filled_cap,
+                            "occupancy_pct": occ_pct,
+                            "fee_per_hour": "20 TL / Saat",
+                            "type": "Belediye Otoparkı",
+                            "status": status
+                        })
+    except Exception as e:
+        print(f"Error fetching OtoparkDolulukDurumu: {e}")
+
+    if not live_lots:
+        live_lots = GAZIANTEP_PARKING_LOTS
+
+    return jsonify({"success": True, "count": len(live_lots), "data": clean_dict_strings(live_lots)})
+
+# API: OTOPARK REZERVASYON KAYDI
+@app.route("/api/reserve-parking", methods=["POST"])
+def reserve_parking_api():
+    data = request.json or {}
+    parking_id = data.get("parking_id", 1)
+    driver_name = data.get("driver_name", "Ahmet Yılmaz")
+    plate_number = data.get("plate_number", "27 ABC 123").strip().upper()
+    phone = data.get("phone", "0555 123 45 67")
+    duration = data.get("duration", "2 Saat")
+
+    reservation_code = f"OTP-20260727-{abs(hash(driver_name + plate_number)) % 89999 + 10000}"
+
+    parking_name = "15 Temmuz Demokrasi Meydanı Yeraltı Otoparkı"
+    for pk in GAZIANTEP_PARKING_LOTS:
+        if str(pk["id"]) == str(parking_id):
+            parking_name = pk["name"]
+
+    res_entry = {
+        "reservation_code": reservation_code,
+        "parking_name": parking_name,
+        "driver_name": driver_name,
+        "plate_number": plate_number,
+        "phone": phone,
+        "duration": duration,
+        "created_at": "2026-07-27 10:38:00"
+    }
+
+    try:
+        res_file = os.path.join(DATA_DIR, "parking_reservations.json")
+        existing = []
+        if os.path.exists(res_file):
+            try:
+                with open(res_file, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+            except Exception:
+                existing = []
+
+        existing.append(res_entry)
+        with open(res_file, "w", encoding="utf-8") as f:
+            json.dump(existing, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Read-only environment, skipping parking file write: {e}")
+
+    return jsonify({
+        "success": True,
+        "message": f"Otopark randevunuz '{reservation_code}' koduyla başarıyla kaydedilmiştir.",
+        "data": clean_dict_strings(res_entry)
+    })
 
 @app.route("/api/street-route", methods=["POST"])
 def get_street_route():
