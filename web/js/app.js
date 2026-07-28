@@ -383,7 +383,7 @@ async function loadRoutes() {
         
         if (json.success && json.data) {
             allRoutes = json.data;
-            switchSidebarMode('bus');
+            renderVerticalAccordionMenu();
             populateRequestRouteSelect(allRoutes);
             if (allRoutes.length > 0) {
                 onRequestRouteSelectChanged();
@@ -406,201 +406,245 @@ function populateRequestRouteSelect(routes) {
     });
 }
 
-let currentSidebarMode = 'bus';
+let expandedCategories = {
+    'bus': true,
+    'tram': true,
+    'gaziray': false,
+    'gazibis': false,
+    'parking': false,
+    'accessibility': false
+};
 
-function switchSidebarMode(mode) {
-    currentSidebarMode = mode;
-
-    document.querySelectorAll('.mode-tab-btn').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById(`btn-mode-${mode}`);
-    if (activeBtn) activeBtn.classList.add('active');
-
-    const searchContainer = document.getElementById('sidebar-search-container');
-    const accessBox = document.getElementById('sidebar-accessibility-box');
-
-    showRouteListView();
-
-    if (mode === 'bus') {
-        if (searchContainer) searchContainer.style.display = 'flex';
-        if (accessBox) accessBox.style.display = 'flex';
-        const busRoutes = allRoutes.filter(r => !r.route_code.startsWith('T') && !r.route_code.startsWith('GR'));
-        renderRouteList(busRoutes.length > 0 ? busRoutes : allRoutes);
-    } 
-    else if (mode === 'tram') {
-        if (searchContainer) searchContainer.style.display = 'none';
-        if (accessBox) accessBox.style.display = 'none';
-        const tramRoutes = allRoutes.filter(r => r.route_code.startsWith('T'));
-        renderRouteList(tramRoutes.length > 0 ? tramRoutes : [
-            { route_code: 'T1', route_name: 'T1: İBN-İ SİNA - GAR (Tramvay)' },
-            { route_code: 'T2', route_name: 'T2: ADLİYE - GAR (Tramvay)' },
-            { route_code: 'T3', route_name: 'T3: ADLİYE - BURÇ KAVŞAĞI (Tramvay)' }
-        ]);
-    } 
-    else if (mode === 'gaziray') {
-        if (searchContainer) searchContainer.style.display = 'none';
-        if (accessBox) accessBox.style.display = 'none';
-        const grRoutes = allRoutes.filter(r => r.route_code.startsWith('GR'));
-        renderRouteList(grRoutes.length > 0 ? grRoutes : [
-            { route_code: 'GR01', route_name: 'GR01: BAŞPINAR - TAŞLICA (Gaziray Banliyö)' }
-        ]);
-    } 
-    else if (mode === 'gazibis') {
-        if (searchContainer) searchContainer.style.display = 'none';
-        if (accessBox) accessBox.style.display = 'none';
-        renderGaziBisCategoryList();
-        if (!isGaziBisVisible) toggleGaziBisMapLayer();
-    } 
-    else if (mode === 'parking') {
-        if (searchContainer) searchContainer.style.display = 'none';
-        if (accessBox) accessBox.style.display = 'none';
-        renderParkingCategoryList();
-        if (!isParkingVisible) toggleParkingMapLayer();
-    } 
-    else if (mode === 'accessibility') {
-        if (searchContainer) searchContainer.style.display = 'none';
-        if (accessBox) accessBox.style.display = 'none';
-        renderAccessibilityCategoryList();
-        if (!isAccessibilityVisible) toggleAccessibilityMapLayer();
-    }
-}
-
-function renderGaziBisCategoryList() {
+function renderVerticalAccordionMenu(filterQuery = '') {
     const container = document.getElementById('route-items-box');
+    if (!container) return;
     container.innerHTML = '';
 
-    if (!gazibisStationsList || gazibisStationsList.length === 0) {
-        container.innerHTML = '<div style="padding:16px; text-align:center; color:#64748b;">GaziBis istasyonları yükleniyor...</div>';
-        return;
-    }
+    const query = filterQuery.toLowerCase().trim();
+    const isAccessOnly = document.getElementById('accessibility-filter-toggle')?.checked || false;
 
-    gazibisStationsList.forEach((st) => {
-        const item = document.createElement('div');
-        item.className = 'category-item-tile';
-        item.onclick = () => {
-            if (map) {
-                map.flyTo([st.lat, st.lng], 16);
-                const m = gaziBisMarkers.find(marker => marker.getLatLng().lat === st.lat);
-                if (m) m.openPopup();
+    const busRoutes = allRoutes.filter(r => !r.route_code.startsWith('T') && !r.route_code.startsWith('GR'));
+    const tramRoutes = allRoutes.filter(r => r.route_code.startsWith('T'));
+    const grRoutes = allRoutes.filter(r => r.route_code.startsWith('GR'));
+
+    const categories = [
+        {
+            id: 'bus',
+            title: 'Otobüs Hatları',
+            icon: 'fa-bus',
+            color: '#2563eb',
+            bgColor: '#eff6ff',
+            count: busRoutes.length,
+            renderContent: (bodyEl) => {
+                let filtered = busRoutes;
+                if (query) {
+                    filtered = filtered.filter(r => r.route_code.toLowerCase().includes(query) || r.route_name.toLowerCase().includes(query));
+                }
+                filtered.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'route-list-item';
+                    item.onclick = (e) => { e.stopPropagation(); selectRoute(r.route_code); };
+                    const accessBadge = '<span style="font-size: 0.68rem; background: #d1fae5; color: #047857; padding: 2px 6px; border-radius: 6px; font-weight: 800;"><i class="fa-solid fa-wheelchair"></i> %100 Uyumlu</span>';
+                    item.innerHTML = `
+                        <div class="route-code-badge">${r.route_code}</div>
+                        <div class="route-name-text" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:4px;">
+                            <span>${r.route_name}</span>
+                            ${isAccessOnly ? accessBadge : ''}
+                        </div>
+                    `;
+                    bodyEl.appendChild(item);
+                });
             }
+        },
+        {
+            id: 'tram',
+            title: 'Tramvay Hatları',
+            icon: 'fa-train-subway',
+            color: '#dc2626',
+            bgColor: '#fef2f2',
+            count: tramRoutes.length || 3,
+            renderContent: (bodyEl) => {
+                const list = tramRoutes.length > 0 ? tramRoutes : [
+                    { route_code: 'T1', route_name: 'T1: İBN-İ SİNA - GAR (Tramvay)' },
+                    { route_code: 'T2', route_name: 'T2: ADLİYE - GAR (Tramvay)' },
+                    { route_code: 'T3', route_name: 'T3: ADLİYE - BURÇ KAVŞAĞI (Tramvay)' }
+                ];
+                list.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'route-list-item';
+                    item.onclick = (e) => { e.stopPropagation(); selectRoute(r.route_code); };
+                    item.innerHTML = `
+                        <div class="route-code-badge red-badge">${r.route_code}</div>
+                        <div class="route-name-text">${r.route_name}</div>
+                    `;
+                    bodyEl.appendChild(item);
+                });
+            }
+        },
+        {
+            id: 'gaziray',
+            title: 'Gaziray Banliyö',
+            icon: 'fa-train',
+            color: '#ca8a04',
+            bgColor: '#fefce8',
+            count: grRoutes.length || 1,
+            renderContent: (bodyEl) => {
+                const list = grRoutes.length > 0 ? grRoutes : [
+                    { route_code: 'GR01', route_name: 'GR01: BAŞPINAR - TAŞLICA (Gaziray Banliyö)' }
+                ];
+                list.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'route-list-item';
+                    item.onclick = (e) => { e.stopPropagation(); selectRoute(r.route_code); };
+                    item.innerHTML = `
+                        <div class="route-code-badge yellow-badge">${r.route_code}</div>
+                        <div class="route-name-text">${r.route_name}</div>
+                    `;
+                    bodyEl.appendChild(item);
+                });
+            }
+        },
+        {
+            id: 'gazibis',
+            title: 'GaziBis İstasyonları',
+            icon: 'fa-bicycle',
+            color: '#7c3aed',
+            bgColor: '#f5f3ff',
+            count: gazibisStationsList.length || 8,
+            renderContent: (bodyEl) => {
+                gazibisStationsList.forEach(st => {
+                    const item = document.createElement('div');
+                    item.className = 'category-item-tile';
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        if (!isGaziBisVisible) toggleGaziBisMapLayer();
+                        if (map) {
+                            map.flyTo([st.lat, st.lng], 16);
+                            const m = gaziBisMarkers.find(marker => marker.getLatLng().lat === st.lat);
+                            if (m) m.openPopup();
+                        }
+                    };
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 800; color: #6d28d9; font-size: 0.88rem;"><i class="fa-solid fa-bicycle"></i> ${st.name}</div>
+                            <div style="font-size: 0.76rem; color: #059669; font-weight: 700;">${st.available_bikes} Boş Bisiklet • ${st.available_docks} Boş Park</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right" style="color: #cbd5e1; font-size: 0.8rem;"></i>
+                    `;
+                    bodyEl.appendChild(item);
+                });
+            }
+        },
+        {
+            id: 'parking',
+            title: 'Akıllı Otoparklar',
+            icon: 'fa-square-parking',
+            color: '#0284c7',
+            bgColor: '#f0f9ff',
+            count: parkingLotsList.length || 6,
+            renderContent: (bodyEl) => {
+                parkingLotsList.forEach(pk => {
+                    const item = document.createElement('div');
+                    item.className = 'category-item-tile';
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        if (!isParkingVisible) toggleParkingMapLayer();
+                        if (map) {
+                            map.flyTo([pk.lat, pk.lng], 16);
+                            const m = parkingMarkers.find(marker => marker.getLatLng().lat === pk.lat);
+                            if (m) m.openPopup();
+                        }
+                    };
+                    const pct = pk.occupancy_pct || 50;
+                    const badgeColor = pct > 85 ? '#ef4444' : (pct > 60 ? '#f59e0b' : '#10b981');
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 800; color: #0f172a; font-size: 0.88rem;"><i class="fa-solid fa-square-parking" style="color:#0284c7;"></i> ${pk.name}</div>
+                            <div style="font-size: 0.76rem; color: #64748b;">${pk.empty_spots} Boş Park Yeri / ${pk.total_capacity} Kapasite</div>
+                        </div>
+                        <span style="background: ${badgeColor}20; color: ${badgeColor}; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 8px;">%${pct} Dolu</span>
+                    `;
+                    bodyEl.appendChild(item);
+                });
+            }
+        },
+        {
+            id: 'accessibility',
+            title: 'Engelsiz Ulaşım Noktaları',
+            icon: 'fa-wheelchair',
+            color: '#0d9488',
+            bgColor: '#f0fdf4',
+            count: accessibilityServicesList.length || 8,
+            renderContent: (bodyEl) => {
+                accessibilityServicesList.forEach(srv => {
+                    const item = document.createElement('div');
+                    item.className = 'category-item-tile';
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        if (!isAccessibilityVisible) toggleAccessibilityMapLayer();
+                        if (map) {
+                            map.flyTo([srv.lat, srv.lng], 16);
+                            const m = accessibilityMarkers.find(marker => marker.getLatLng().lat === srv.lat);
+                            if (m) m.openPopup();
+                        }
+                    };
+                    const iconSymbol = srv.charging_station ? 'fa-bolt' : 'fa-wheelchair';
+                    const iconColor = srv.charging_station ? '#f59e0b' : '#0d9488';
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 800; color: #0f172a; font-size: 0.88rem;"><i class="fa-solid ${iconSymbol}" style="color:${iconColor}; margin-right: 4px;"></i> ${srv.name}</div>
+                            <div style="font-size: 0.76rem; color: #64748b;">${srv.district || 'Gaziantep'} • ${srv.type}</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right" style="color: #cbd5e1; font-size: 0.8rem;"></i>
+                    `;
+                    bodyEl.appendChild(item);
+                });
+            }
+        }
+    ];
+
+    categories.forEach(cat => {
+        const isOpen = query ? true : expandedCategories[cat.id];
+
+        const card = document.createElement('div');
+        card.className = 'accordion-category-card';
+
+        const header = document.createElement('div');
+        header.className = `accordion-category-header ${isOpen ? 'active' : ''}`;
+        header.onclick = () => {
+            expandedCategories[cat.id] = !expandedCategories[cat.id];
+            renderVerticalAccordionMenu(document.getElementById('route-search-input')?.value || '');
         };
 
-        item.innerHTML = `
-            <div>
-                <div style="font-weight: 800; color: #6d28d9; font-size: 0.9rem;"><i class="fa-solid fa-bicycle"></i> ${st.name}</div>
-                <div style="font-size: 0.78rem; color: #059669; font-weight: 700;">${st.available_bikes} Boş Bisiklet • ${st.available_docks} Boş Park</div>
+        header.innerHTML = `
+            <div class="accordion-header-title">
+                <div class="accordion-header-icon" style="background: ${cat.bgColor}; color: ${cat.color};">
+                    <i class="fa-solid ${cat.icon}"></i>
+                </div>
+                <span>${cat.title}</span>
             </div>
-            <i class="fa-solid fa-chevron-right" style="color: #cbd5e1; font-size: 0.8rem;"></i>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function renderParkingCategoryList() {
-    const container = document.getElementById('route-items-box');
-    container.innerHTML = '';
-
-    if (!parkingLotsList || parkingLotsList.length === 0) {
-        container.innerHTML = '<div style="padding:16px; text-align:center; color:#64748b;">Otopark verileri yükleniyor...</div>';
-        return;
-    }
-
-    parkingLotsList.forEach((pk) => {
-        const item = document.createElement('div');
-        item.className = 'category-item-tile';
-        item.onclick = () => {
-            if (map) {
-                map.flyTo([pk.lat, pk.lng], 16);
-                const m = parkingMarkers.find(marker => marker.getLatLng().lat === pk.lat);
-                if (m) m.openPopup();
-            }
-        };
-
-        const pct = pk.occupancy_pct || 50;
-        const badgeColor = pct > 85 ? '#ef4444' : (pct > 60 ? '#f59e0b' : '#10b981');
-
-        item.innerHTML = `
-            <div>
-                <div style="font-weight: 800; color: #0f172a; font-size: 0.88rem;"><i class="fa-solid fa-square-parking" style="color:#0284c7;"></i> ${pk.name}</div>
-                <div style="font-size: 0.78rem; color: #64748b;">${pk.empty_spots} Boş Park Yeri / ${pk.total_capacity} Kapasite</div>
-            </div>
-            <span style="background: ${badgeColor}20; color: ${badgeColor}; font-weight: 800; font-size: 0.75rem; padding: 3px 8px; border-radius: 8px;">%${pct} Dolu</span>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function renderAccessibilityCategoryList() {
-    const container = document.getElementById('route-items-box');
-    container.innerHTML = '';
-
-    if (!accessibilityServicesList || accessibilityServicesList.length === 0) {
-        container.innerHTML = '<div style="padding:16px; text-align:center; color:#64748b;">Engelsiz ulaşım noktaları yükleniyor...</div>';
-        return;
-    }
-
-    accessibilityServicesList.forEach((srv) => {
-        const item = document.createElement('div');
-        item.className = 'category-item-tile';
-        item.onclick = () => {
-            if (map) {
-                map.flyTo([srv.lat, srv.lng], 16);
-                const m = accessibilityMarkers.find(marker => marker.getLatLng().lat === srv.lat);
-                if (m) m.openPopup();
-            }
-        };
-
-        const iconSymbol = srv.charging_station ? 'fa-bolt' : 'fa-wheelchair';
-        const iconColor = srv.charging_station ? '#f59e0b' : '#0d9488';
-
-        item.innerHTML = `
-            <div>
-                <div style="font-weight: 800; color: #0f172a; font-size: 0.88rem;"><i class="fa-solid ${iconSymbol}" style="color:${iconColor}; margin-right: 4px;"></i> ${srv.name}</div>
-                <div style="font-size: 0.76rem; color: #64748b;">${srv.district || 'Gaziantep'} • ${srv.type}</div>
-            </div>
-            <i class="fa-solid fa-chevron-right" style="color: #cbd5e1; font-size: 0.8rem;"></i>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function renderRouteList(routes, isAccessFilterActive = false) {
-    const container = document.getElementById('route-items-box');
-    container.innerHTML = '';
-
-    routes.forEach((r) => {
-        const item = document.createElement('div');
-        item.className = 'route-list-item';
-        item.onclick = () => selectRoute(r.route_code);
-
-        const badgeClass = r.route_code.startsWith('T') ? 'red-badge' : (r.route_code.startsWith('GR') ? 'yellow-badge' : '');
-        const accessBadge = '<span style="font-size: 0.68rem; background: #d1fae5; color: #047857; padding: 2px 6px; border-radius: 6px; font-weight: 800; border: 1px solid #6ee7b7; white-space: nowrap;"><i class="fa-solid fa-wheelchair"></i> %100 Uyumlu</span>';
-
-        item.innerHTML = `
-            <div class="route-code-badge ${badgeClass}">${r.route_code}</div>
-            <div class="route-name-text" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:4px;">
-                <span>${r.route_name}</span>
-                ${isAccessFilterActive ? accessBadge : ''}
+            <div class="accordion-header-right">
+                <span class="accordion-count-badge">${cat.count}</span>
+                <i class="fa-solid fa-chevron-down accordion-chevron"></i>
             </div>
         `;
-        container.appendChild(item);
+
+        const body = document.createElement('div');
+        body.className = `accordion-category-body ${isOpen ? 'open' : ''}`;
+
+        if (isOpen) {
+            cat.renderContent(body);
+        }
+
+        card.appendChild(header);
+        card.appendChild(body);
+        container.appendChild(card);
     });
 }
 
 function filterRouteList() {
     const query = document.getElementById('route-search-input').value.toLowerCase().trim();
-    const isAccessOnly = document.getElementById('accessibility-filter-toggle')?.checked || false;
-
-    let filtered = allRoutes;
-    if (currentSidebarMode === 'bus') {
-        filtered = allRoutes.filter(r => !r.route_code.startsWith('T') && !r.route_code.startsWith('GR'));
-    }
-    if (query) {
-        filtered = filtered.filter(r => 
-            r.route_code.toLowerCase().includes(query) || 
-            r.route_name.toLowerCase().includes(query)
-        );
-    }
-    renderRouteList(filtered, isAccessOnly);
+    renderVerticalAccordionMenu(query);
 }
 
 async function selectRoute(routeCode) {
