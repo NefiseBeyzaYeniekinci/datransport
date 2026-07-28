@@ -5,6 +5,10 @@ import math
 import json
 import requests
 from flask import Flask, jsonify, request, send_from_directory
+try:
+    from flask_cors import CORS
+except ImportError:
+    CORS = None
 import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -16,6 +20,16 @@ from src.ml_model import get_trained_model, train_and_evaluate_model, load_kaggl
 from src.gtfs_parser import gtfs_store
 
 app = Flask(__name__, static_folder="web", static_url_path="")
+
+if CORS:
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
+    return response
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 stops_file = os.path.join(DATA_DIR, "cleaned_transport_data.csv")
@@ -798,7 +812,109 @@ def get_ml_info():
         "target": "CO2 Emissions (g/km)"
     }
     
-    return jsonify({"success": True, "metrics": metrics, "sample_data": sample})
+@app.route("/api/ai-route-recommend", methods=["POST", "OPTIONS"])
+def ai_route_recommend():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
+    data = request.json or {}
+    distance_km = float(data.get("distance_km", 5.4))
+    hour = int(data.get("hour", 8))
+    traffic_density = data.get("traffic_density", "Akıcı")
+    start_stop_name = data.get("start_stop_name", "Başlangıç Durağı")
+    end_stop_name = data.get("end_stop_name", "Varış Durağı")
+    user_preference = data.get("user_preference", "fastest")
+
+    is_peak_hour = (7 <= hour <= 9) or (17 <= hour <= 19)
+    if isinstance(traffic_density, (int, float)):
+        traffic_pct = float(traffic_density)
+    elif "yoğun" in str(traffic_density).lower() or "tıkanık" in str(traffic_density).lower():
+        traffic_pct = 85.0
+    else:
+        traffic_pct = 75.0 if is_peak_hour else 38.0
+
+    traffic_multiplier = 1.0 + (traffic_pct / 100.0) * 0.45
+
+    tram_speed_kmh = 24.0
+    bus_speed_kmh = max(10.0, 22.0 / traffic_multiplier)
+    car_speed_kmh = max(12.0, 28.0 / traffic_multiplier)
+
+    tram_time_mins = round((distance_km / tram_speed_kmh) * 60.0, 1)
+    bus_time_mins = round((distance_km / bus_speed_kmh) * 60.0, 1)
+    car_time_mins = round((distance_km / car_speed_kmh) * 60.0, 1)
+
+    bus_co2_kg = round(distance_km * 0.28 * traffic_multiplier, 2)
+    tram_co2_kg = round(distance_km * 0.04, 2)
+    car_co2_kg = round(distance_km * 0.22 * traffic_multiplier, 2)
+    ev_co2_kg = 0.0
+
+    if user_preference == "eco":
+        best_mode = "Tramvay (T1/T2/T3) & Elektrikli Otobüs"
+        reason = "Sıfır/En düşük karbon salınımı ile çevre dostu seyahat sağlar."
+    elif user_preference == "fastest" and is_peak_hour:
+        best_mode = "Tramvay (T1/T2/T3)"
+        reason = "Pik saat trafiğine takılmayan özel raylı hat olduğu için en hızlı seçenektir."
+    elif distance_km <= 3.0:
+        best_mode = "GaziBis (Akıllı Bisiklet) / Elektrikli Tramvay"
+        reason = "Kısa mesafede hem sıfır emisyonlu hem de en pratik ulaşım şeklidir."
+    else:
+        best_mode = "Tramvay (T1/T2/T3) / Körüklü Otobüs"
+        reason = "Yolcu kapasitesi yüksek, dengeli ve konforlu toplu taşıma."
+
+    saved_co2_kg = round(max(bus_co2_kg, car_co2_kg) - tram_co2_kg, 2)
+    trees_saved = round(saved_co2_kg * 1.36, 1)
+
+    if is_peak_hour:
+        ai_advice = f"Saat {hour:02d}:00 pik şehir trafiğinde (%{int(traffic_pct)} yoğunluk), {best_mode} kullanımı kara yolu trafiğine takılmadığı için otobüse göre ~{round(max(1, bus_time_mins - tram_time_mins))} dakika daha hızlı ve %85 daha çevrecidir."
+    else:
+        ai_advice = f"{distance_km} km mesafeli bu güzergahta {best_mode} tercih ederek seyahatinizi {tram_time_mins} dakikada tamamlayabilir ve {saved_co2_kg} kg CO2 tasarrufu sağlayabilirsiniz."
+
+    modes_comparison = [
+        {
+            "mode": "Tramvay Hatları (T1/T2/T3)",
+            "duration_mins": tram_time_mins,
+            "co2_kg": tram_co2_kg,
+            "eco_score": "A+ (En Çevreci / Önerilen)",
+            "is_recommended": True
+        },
+        {
+            "mode": "Elektrikli Otobüs (18M EV)",
+            "duration_mins": round(tram_time_mins * 1.1, 1),
+            "co2_kg": ev_co2_kg,
+            "eco_score": "A++ (Sıfır Emisyon)",
+            "is_recommended": False
+        },
+        {
+            "mode": "Belediye Otobüsü (Solo / Körüklü)",
+            "duration_mins": bus_time_mins,
+            "co2_kg": bus_co2_kg,
+            "eco_score": "B (Dengeli Emisyon)",
+            "is_recommended": False
+        },
+        {
+            "mode": "Bireysel Otomobil (1.6 Dizel)",
+            "duration_mins": car_time_mins,
+            "co2_kg": car_co2_kg,
+            "eco_score": "D (Yüksek Emisyon)",
+            "is_recommended": False
+        }
+    ]
+
+    return jsonify({
+        "success": True,
+        "recommended_mode": best_mode,
+        "recommendation_reason": reason,
+        "distance_km": distance_km,
+        "hour": hour,
+        "traffic_density_pct": int(traffic_pct),
+        "is_peak_hour": is_peak_hour,
+        "tram_duration_mins": tram_time_mins,
+        "bus_duration_mins": bus_time_mins,
+        "co2_saved_kg": saved_co2_kg,
+        "trees_saved": trees_saved,
+        "ai_advice": ai_advice,
+        "modes_comparison": modes_comparison
+    })
 
 if __name__ == "__main__":
     print("Starting Flask Backend Server at http://localhost:5000")
