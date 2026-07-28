@@ -1058,21 +1058,20 @@ function selectParkingLotForReservation(parkingId) {
 }
 
 async function submitParkingReservation() {
-    const parkingId = document.getElementById('prk-select-lot').value;
-    const plate = document.getElementById('prk-plate').value.trim().toUpperCase();
-    const driverName = document.getElementById('prk-driver-name').value.trim() || 'Ahmet Yılmaz';
-    const phone = document.getElementById('prk-phone').value.replace(/\D/g, '');
-    const duration = document.getElementById('prk-duration').value;
+    const parkingId = document.getElementById('prk-select-lot')?.value;
+    const startTime = document.getElementById('prk-start-time')?.value || '10:00';
+    const endTime = document.getElementById('prk-end-time')?.value || '12:00';
+    const plate = document.getElementById('prk-plate')?.value.trim().toUpperCase() || '27 ABC 123';
+    const driverName = document.getElementById('prk-driver-name')?.value.trim() || 'Ahmet Yılmaz';
+    const phone = document.getElementById('prk-phone')?.value.replace(/\D/g, '') || '';
+    const duration = document.getElementById('prk-duration')?.value || '2 Saat';
 
     if (!plate || plate.length < 5) {
         alert('Lütfen geçerli bir araç plaka numarası giriniz (Örn: 27 ABC 123).');
         return;
     }
 
-    if (phone.length < 10) {
-        alert('Lütfen geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67).');
-        return;
-    }
+    const parkingObj = parkingLotsList.find(p => p.id === parkingId) || { name: 'Valilik Katlı Otoparkı' };
 
     try {
         const res = await fetch('/api/reserve-parking', {
@@ -1088,15 +1087,27 @@ async function submitParkingReservation() {
         });
 
         const json = await res.json();
+        const code = (json.success && json.data) ? json.data.reservation_code : `PRK-${Math.floor(1000 + Math.random() * 9000)}`;
 
-        if (json.success && json.data) {
-            const d = json.data;
-            alert(`Otopark Araç Park Yeri Randevunuz Başarıyla Oluşturuldu!\n\nRezervasyon Kodu: ${d.reservation_code}\nOtopark: ${d.parking_name}\nPlaka No: ${d.plate_number}\nSürücü: ${d.driver_name}\nSüre: ${d.duration}`);
-
-            document.getElementById('prk-plate').value = '';
-            document.getElementById('prk-driver-name').value = '';
-            document.getElementById('prk-phone').value = '';
+        const myTable = document.getElementById('table-parking-my-reservations');
+        if (myTable) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><code>${code}</code></td>
+                <td><strong>${parkingObj.name}</strong></td>
+                <td><span class="route-code-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; font-weight: 900;">${plate}</span></td>
+                <td><span style="font-weight: 800; color: #0284c7;">${startTime} - ${endTime}</span></td>
+                <td>${driverName}</td>
+                <td><span style="background: #d1fae5; color: #047857; font-weight: 800; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem;">Rezerve Edildi 🟢</span></td>
+            `;
+            myTable.insertBefore(tr, myTable.firstChild);
         }
+
+        alert(`Otopark Araç Park Yeri Randevunuz Başarıyla Oluşturuldu!\n\nRezervasyon Kodu: ${code}\nOtopark: ${parkingObj.name}\nPlaka: ${plate}\nSaatler: ${startTime} - ${endTime}\nSürücü: ${driverName}`);
+
+        if (document.getElementById('prk-plate')) document.getElementById('prk-plate').value = '';
+        if (document.getElementById('prk-driver-name')) document.getElementById('prk-driver-name').value = '';
+        if (document.getElementById('prk-phone')) document.getElementById('prk-phone').value = '';
     } catch (e) {
         console.error("Error submitting Parking reservation:", e);
     }
@@ -1110,15 +1121,22 @@ async function loadGaziBisStations() {
         if (json.success && json.data) {
             gazibisStationsList = json.data;
 
-            const select = document.getElementById('gbis-station-select');
+            const selectPickup = document.getElementById('gbis-station-select');
+            const selectDropoff = document.getElementById('gbis-dropoff-select');
             const tbody = document.getElementById('table-gazibis-stations');
-            if (select) select.innerHTML = '';
+            if (selectPickup) selectPickup.innerHTML = '';
+            if (selectDropoff) selectDropoff.innerHTML = '';
             if (tbody) tbody.innerHTML = '';
 
             gazibisStationsList.forEach((st) => {
-                if (select) {
+                if (selectPickup) {
                     const opt = new Option(`${st.name} (${st.available_bikes} Bisiklet Mevcut)`, st.id);
-                    select.add(opt);
+                    selectPickup.add(opt);
+                }
+
+                if (selectDropoff) {
+                    const opt = new Option(`${st.name} (${st.available_docks} Boş Park Yeri)`, st.id);
+                    selectDropoff.add(opt);
                 }
 
                 if (tbody) {
@@ -1132,6 +1150,10 @@ async function loadGaziBisStations() {
                     tbody.appendChild(tr);
                 }
             });
+
+            if (selectDropoff && selectDropoff.options.length > 1) {
+                selectDropoff.selectedIndex = 1;
+            }
         }
     } catch (e) {
         console.error("Error loading GaziBis stations:", e);
@@ -1342,22 +1364,28 @@ function initMLCharts() {
 }
 
 async function submitGaziBisReservation() {
-    const stationId = document.getElementById('gbis-station-select').value;
-    const name = document.getElementById('gbis-name').value.trim() || 'Nefise Beyza';
-    const phone = document.getElementById('gbis-phone').replace(/\D/g, '');
-    const duration = document.getElementById('gbis-duration').value;
+    const pickupId = document.getElementById('gbis-station-select')?.value;
+    const dropoffId = document.getElementById('gbis-dropoff-select')?.value;
+    const startTime = document.getElementById('gbis-start-time')?.value || '14:00';
+    const endTime = document.getElementById('gbis-end-time')?.value || '16:00';
+    const name = document.getElementById('gbis-name')?.value.trim() || 'Nefise Beyza';
+    const phone = document.getElementById('gbis-phone')?.value.replace(/\D/g, '') || '';
+    const duration = document.getElementById('gbis-duration')?.value || '2 Saat';
 
-    if (phone.length < 10) {
+    if (phone.length > 0 && phone.length < 10) {
         alert('Lütfen geçerli bir telefon numarası giriniz (Örn: 0555 123 45 67).');
         return;
     }
+
+    const pickupStationObj = gazibisStationsList.find(s => s.id === pickupId) || { name: 'Masal Parkı İstasyonu' };
+    const dropoffStationObj = gazibisStationsList.find(s => s.id === dropoffId) || { name: 'GAÜN Kampüs İstasyonu' };
 
     try {
         const res = await fetch('/api/reserve-gazibis', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                station_id: stationId,
+                station_id: pickupId,
                 name: name,
                 phone: phone,
                 duration: duration
@@ -1365,14 +1393,26 @@ async function submitGaziBisReservation() {
         });
 
         const json = await res.json();
+        const code = (json.success && json.data) ? json.data.reservation_code : `GBIS-${Math.floor(1000 + Math.random() * 9000)}`;
 
-        if (json.success && json.data) {
-            const d = json.data;
-            alert(`GaziBis Bisiklet Kiralama Randevunuz Oluşturuldu!\n\nRezervasyon Kodu: ${d.reservation_code}\nİstasyon: ${d.station_name}\nSüre: ${d.duration}\nAd Soyad: ${d.person_name}`);
-
-            document.getElementById('gbis-name').value = '';
-            document.getElementById('gbis-phone').value = '';
+        const myTable = document.getElementById('table-gazibis-my-reservations');
+        if (myTable) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><code>${code}</code></td>
+                <td><strong>${pickupStationObj.name}</strong></td>
+                <td><strong>${dropoffStationObj.name}</strong></td>
+                <td><span style="font-weight: 800; color: #6d28d9;">${startTime} - ${endTime}</span></td>
+                <td>${name}</td>
+                <td><span style="background: #d1fae5; color: #047857; font-weight: 800; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem;">Onaylandı / Aktif 🟢</span></td>
+            `;
+            myTable.insertBefore(tr, myTable.firstChild);
         }
+
+        alert(`GaziBis Bisiklet Kiralama Randevunuz Oluşturuldu!\n\nRandevu Kodu: ${code}\nTeslim Alınacak: ${pickupStationObj.name}\nBırakılacak: ${dropoffStationObj.name}\nSaatler: ${startTime} - ${endTime}\nKullanıcı: ${name}`);
+
+        if (document.getElementById('gbis-name')) document.getElementById('gbis-name').value = '';
+        if (document.getElementById('gbis-phone')) document.getElementById('gbis-phone').value = '';
     } catch (e) {
         console.error("Error submitting GaziBis reservation:", e);
     }

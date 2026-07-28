@@ -341,13 +341,44 @@
                 </button>
             </div>
 
+            <!-- AKTİF GAZİBİS KİRALAMA & RANDEVULARIM TABLE -->
+            <div class="card" style="border-radius: 20px; margin-bottom: 1.25rem; border: 1.5px solid #d8b4fe; background: linear-gradient(135deg, #ffffff, #faf5ff);">
+                <div class="card-title" style="color: #6d28d9;">
+                    <i class="fa-solid fa-bicycle" style="color: #8b5cf6;"></i> Aktif GaziBis Kiralama & Randevularım
+                </div>
+                <div class="table-container" style="max-height: 200px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Randevu Kodu</th>
+                                <th>Teslim Alınacak İstasyon</th>
+                                <th>Bırakılacak İstasyon</th>
+                                <th>Randevu Saatleri</th>
+                                <th>Ad Soyad</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-gazibis-my-reservations">
+                            <tr>
+                                <td><code>GBIS-2026-8492</code></td>
+                                <td><strong>Masal Parkı İstasyonu</strong></td>
+                                <td><strong>GAÜN Kampüs İstasyonu</strong></td>
+                                <td><span style="font-weight: 800; color: #6d28d9;">14:00 - 16:00</span></td>
+                                <td>Nefise Beyza</td>
+                                <td><span style="background: #d1fae5; color: #047857; font-weight: 800; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem;">Onaylandı / Aktif 🟢</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="card" style="border-radius: 20px;">
                 <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
                     <span><i class="fa-solid fa-map-pin" style="color: #8b5cf6;"></i> Canlı GaziBis İstasyon Müsaitlik Durumları</span>
                     <span style="background: #f3e8ff; color: #6b21a8; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 0.78rem;">Canlı Veri</span>
                 </div>
 
-                <div class="table-container" style="max-height: 480px;">
+                <div class="table-container" style="max-height: 440px;">
                     <table>
                         <thead>
                             <tr>
@@ -377,13 +408,44 @@
                 </button>
             </div>
 
+            <!-- AKTİF OTOPARK REZERVASYONLARIM TABLE -->
+            <div class="card" style="border-radius: 20px; margin-bottom: 1.25rem; border: 1.5px solid #7dd3fc; background: linear-gradient(135deg, #ffffff, #f0f9ff);">
+                <div class="card-title" style="color: #0369a1;">
+                    <i class="fa-solid fa-square-parking" style="color: #0284c7;"></i> Aktif Otopark Rezervasyonlarım
+                </div>
+                <div class="table-container" style="max-height: 200px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rezervasyon Kodu</th>
+                                <th>Otopark Konumu</th>
+                                <th>Plaka No</th>
+                                <th>Park Giriş - Çıkış Saati</th>
+                                <th>Sürücü</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-parking-my-reservations">
+                            <tr>
+                                <td><code>PRK-2026-9214</code></td>
+                                <td><strong>Valilik Katlı Otoparkı</strong></td>
+                                <td><span class="route-code-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; font-weight: 900;">27 ABC 123</span></td>
+                                <td><span style="font-weight: 800; color: #0284c7;">10:00 - 12:00</span></td>
+                                <td>Ahmet Yılmaz</td>
+                                <td><span style="background: #d1fae5; color: #047857; font-weight: 800; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem;">Rezerve Edildi 🟢</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="card" style="border-radius: 20px;">
                 <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
                     <span><i class="fa-solid fa-square-parking" style="color: #0284c7;"></i> Gaziantep Canlı Otopark Doluluk Oranları</span>
                     <span style="background: #e0f2fe; color: #0369a1; padding: 2px 10px; border-radius: 12px; font-weight: 800; font-size: 0.78rem;">Canlı Belediye API</span>
                 </div>
 
-                <div class="table-container" style="max-height: 520px;">
+                <div class="table-container" style="max-height: 480px;">
                     <table>
                         <thead>
                             <tr>
@@ -763,32 +825,48 @@
             </div>
             <div class="modal-body">
                 <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.25rem;">
-                    İstediğiniz GaziBis istasyonunu seçerek bisikletinizi hemen rezerve edin ve sıra beklemeden teslim alın.
+                    Teslim alacağınız ve bırakacağınız istasyonu ve kiralama saat aralığını seçerek bisiklet randevunuzu oluşturun.
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">1. GaziBis İstasyonu Seçiniz:</label>
+                    <label class="form-label">1. Teslim Alınacak (Kalkış) İstasyon:</label>
                     <select id="gbis-station-select" class="form-select"></select>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">2. Adınız ve Soyadınız:</label>
+                    <label class="form-label">2. Teslim Edilecek (Bırakılacak) İstasyon:</label>
+                    <select id="gbis-dropoff-select" class="form-select"></select>
+                </div>
+
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label class="form-label">3. Alış Saati:</label>
+                        <input type="time" id="gbis-start-time" value="14:00" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">4. Bırakış Saati:</label>
+                        <input type="time" id="gbis-end-time" value="16:00" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">5. Adınız ve Soyadınız:</label>
                     <input type="text" id="gbis-name" class="form-input" placeholder="Örn: Nefise Beyza">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" style="display: flex; justify-content: space-between;">
-                        <span>3. Telefon Numarası:</span>
+                        <span>6. Telefon Numarası:</span>
                         <span style="font-size: 0.75rem; color: #8b5cf6; font-weight: 700;">Format: 05XX XXX XX XX</span>
                     </label>
                     <input type="tel" id="gbis-phone" class="form-input" maxlength="14" placeholder="05XX XXX XX XX" oninput="formatPhoneNumber(this)">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">4. Kiralama Süresi:</label>
+                    <label class="form-label">7. Kiralama Paketi:</label>
                     <select id="gbis-duration" class="form-select">
                         <option value="1 Saat">1 Saat Kiralama (Ücretsiz / Akıllı Kart)</option>
-                        <option value="2 Saat">2 Saat Kiralama</option>
+                        <option value="2 Saat" selected>2 Saat Kiralama</option>
                         <option value="4 Saat">4 Saat Kiralama</option>
                         <option value="Tam Gün">Tam Gün Kiralama</option>
                     </select>
@@ -812,7 +890,7 @@
             </div>
             <div class="modal-body">
                 <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.25rem;">
-                    Formu doldurarak boş otopark konumlarında aracınız için park yerini önceden ayırtın, şehir merkezinde yer arama derdine son verin!
+                    Otopark konumunu ve giriş - çıkış saat aralığını girerek park yerinizi ayırtın.
                 </div>
 
                 <div class="form-group">
@@ -820,26 +898,37 @@
                     <select id="prk-select-lot" class="form-select"></select>
                 </div>
 
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label class="form-label">2. Park Giriş Saati:</label>
+                        <input type="time" id="prk-start-time" value="10:00" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">3. Tahmini Çıkış Saati:</label>
+                        <input type="time" id="prk-end-time" value="12:00" class="form-input">
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label class="form-label">2. Araç Plaka Numarası:</label>
+                    <label class="form-label">4. Araç Plaka Numarası:</label>
                     <input type="text" id="prk-plate" class="form-input" placeholder="Örn: 27 ABC 123" style="text-transform: uppercase;" maxlength="10">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">3. Sürücü Adı Soyadı:</label>
+                    <label class="form-label">5. Sürücü Adı Soyadı:</label>
                     <input type="text" id="prk-driver-name" class="form-input" placeholder="Örn: Ahmet Yılmaz">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" style="display: flex; justify-content: space-between;">
-                        <span>4. İletişim Telefonu:</span>
+                        <span>6. İletişim Telefonu:</span>
                         <span style="font-size: 0.75rem; color: #0284c7; font-weight: 700;">Format: 05XX XXX XX XX</span>
                     </label>
                     <input type="tel" id="prk-phone" class="form-input" maxlength="14" placeholder="05XX XXX XX XX" oninput="formatPhoneNumber(this)">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">5. Tahmini Park Süresi:</label>
+                    <label class="form-label">7. Tahmini Park Süresi:</label>
                     <select id="prk-duration" class="form-select">
                         <option value="1 Saat">1 Saat Park (Standart)</option>
                         <option value="2 Saat" selected>2 Saat Park</option>
