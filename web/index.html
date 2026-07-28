@@ -665,6 +665,49 @@
                 </div>
             </div>
 
+            <!-- VATANDAŞ DURAK TALEPLERİ KAYIT DEFTERİ CARD -->
+            <div class="card" style="margin-top: 1.5rem; border: 1.5px solid #fdba74; background: linear-gradient(135deg, #ffffff, #fff7ed);">
+                <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; color: #c2410c;">
+                    <span><i class="fa-solid fa-file-signature" style="color: #f97316;"></i> Kullanıcı Vatandaş Durak Talepleri Kayıt Defteri</span>
+                    <button onclick="downloadStopRequestsCSV()" style="background: linear-gradient(135deg, #f97316, #c2410c); color: white; border: none; padding: 9px 18px; border-radius: 12px; font-weight: 800; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(249,115,22,0.3);">
+                        <i class="fa-solid fa-download"></i> Durak Taleplerini CSV İndir
+                    </button>
+                </div>
+                <div style="font-size: 0.83rem; color: #7c2d12; margin-bottom: 1rem;">
+                    Kullanıcıların yeni durak talebi formu üzerinden oluşturduğu tüm kayıtlar aşağıda canlı olarak listelenmekte ve CSV raporu olarak indirilmektedir.
+                </div>
+
+                <div class="table-container" style="max-height: 280px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Talep ID</th>
+                                <th>Hat Kodu</th>
+                                <th>Önerilen Durak Adı</th>
+                                <th>Açıklama / Gerekçe</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-all-stop-requests">
+                            <tr>
+                                <td><code>TLP-20260724-8492</code></td>
+                                <td><span class="route-code-badge" style="padding: 2px 6px; font-size: 0.75rem;">B01</span></td>
+                                <td><strong>TOKİ 2. Etap Ara Durağı</strong></td>
+                                <td>Gazikent yakınında yürüme mesafesini kısaltmak için ara durak talebi</td>
+                                <td><span style="background: #d1fae5; color: #065f46; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">Talep Alındı 🟢</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>TLP-20260724-1025</code></td>
+                                <td><span class="route-code-badge" style="padding: 2px 6px; font-size: 0.75rem;">T1</span></td>
+                                <td><strong>Akkent Parkı - Karataş Ara Durağı</strong></td>
+                                <td>Ara yürüme mesafesi 1.4 km olduğu için yeni tramvay durak talebi</td>
+                                <td><span style="background: #d1fae5; color: #065f46; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">Talep Alındı 🟢</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </section>
 
     </main>

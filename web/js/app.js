@@ -160,11 +160,36 @@ function downloadParkingCSV() {
     triggerCSVDownload("Gaziantep_Canlı_Otopark_Doluluk_Verisi.csv", csv);
 }
 
+let userCreatedStopRequests = [
+    { request_id: "TLP-20260724-8492", route_code: "B01", proposed_stop_name: "TOKİ 2. Etap Ara Durağı", description: "Gazikent yakınında yürüme mesafesini kısaltmak için ara durak talebi", status: "Talep Alındı 🟢", created_at: "2026-07-24 14:05" },
+    { request_id: "TLP-20260724-1025", route_code: "T1", proposed_stop_name: "Akkent Parkı - Karataş Ara Durağı", description: "Ara yürüme mesafesi 1.4 km olduğu için yeni tramvay durak talebi", status: "Talep Alındı 🟢", created_at: "2026-07-24 14:10" }
+];
+
 function downloadStopRequestsCSV() {
-    let csv = "Talep ID,Hat Kodu,Önerilen Durak Adı,Talep Açıklaması,Durum,Tarih\n";
-    csv += '"TLP-20260724-8492","B01","TOKİ 2. Etap Ara Durağı","Gazikent yakınında ara durak talebi","Talep Alındı","2026-07-24"\n';
-    csv += '"TLP-20260724-1025","T1","Akkent Parkı - Karataş Ara Durağı","Ara yürüme mesafesi 1.4 km olduğu için yeni durak talebi","Talep Alındı","2026-07-24"\n';
+    let csv = "Talep ID,Hat Kodu,Önerilen Durak Adı,Talep Açıklaması,Durum,Oluşturulma Tarihi\n";
+    userCreatedStopRequests.forEach(r => {
+        const id = r.request_id || 'TLP-20260724';
+        const route = r.route_code || 'B01';
+        const name = (r.proposed_stop_name || '').replace(/"/g, '""');
+        const desc = (r.description || '').replace(/"/g, '""');
+        const status = (r.status || 'Talep Alındı').replace(' 🟢', '');
+        const date = r.created_at || new Date().toLocaleString('tr-TR');
+        csv += `"${id}","${route}","${name}","${desc}","${status}","${date}"\n`;
+    });
     triggerCSVDownload("Gaziantep_Vatandaş_Durak_Talepleri_Raporu.csv", csv);
+
+    showCustomMessageBox({
+        title: 'Vatandaş Durak Talepleri Raporu İndirildi!',
+        subtitle: 'Kullanıcıların ve vatandaşların oluşturduğu tüm yeni durak talepleri CSV formatında bilgisayarınıza aktarılmıştır.',
+        icon: 'fa-file-csv',
+        iconBg: '#ffedd5',
+        iconColor: '#c2410c',
+        details: [
+            { label: 'Rapor Türü', value: 'Vatandaş Durak Talepleri Kayıt Defteri', color: '#c2410c' },
+            { label: 'Toplam Talep Kaydı', value: `${userCreatedStopRequests.length} Adet`, color: '#2563eb' },
+            { label: 'Dosya Adı', value: 'Gaziantep_Vatandaş_Durak_Talepleri_Raporu.csv', color: '#059669' }
+        ]
+    });
 }
 
 async function downloadKaggleDatasetCSV() {
@@ -1870,6 +1895,16 @@ async function submitStopRequest() {
 
         if (json.success && json.data) {
             const d = json.data;
+
+            userCreatedStopRequests.unshift({
+                request_id: d.request_id || `TLP-20260724-${Math.floor(1000 + Math.random() * 9000)}`,
+                route_code: d.route_code || routeCode,
+                proposed_stop_name: d.proposed_stop_name || proposedName,
+                description: d.description || description,
+                status: "Talep Alındı 🟢",
+                created_at: d.created_at || new Date().toLocaleString('tr-TR')
+            });
+
             const pText = document.getElementById('txt-nearest-prev')?.textContent.replace('Önceki Durak:', '').trim();
             const nText = document.getElementById('txt-nearest-next')?.textContent.replace('Sonraki Durak:', '').trim();
 
@@ -1888,16 +1923,27 @@ async function submitStopRequest() {
                 ]
             });
 
-            const tbody = document.getElementById('table-submitted-requests');
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
+            const rowHTML = `
                 <td><code>${d.request_id}</code></td>
                 <td><span class="route-code-badge" style="padding: 2px 6px; font-size: 0.75rem;">${d.route_code}</span></td>
                 <td><strong>${d.proposed_stop_name}</strong></td>
                 <td>${d.description}</td>
-                <td><span style="background: #d1fae5; color: #065f46; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">Talep Alındı</span></td>
+                <td><span style="background: #d1fae5; color: #065f46; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;">Talep Alındı 🟢</span></td>
             `;
-            tbody.insertBefore(tr, tbody.firstChild);
+
+            const tbody1 = document.getElementById('table-submitted-requests');
+            if (tbody1) {
+                const tr1 = document.createElement('tr');
+                tr1.innerHTML = rowHTML;
+                tbody1.insertBefore(tr1, tbody1.firstChild);
+            }
+
+            const tbody2 = document.getElementById('table-all-stop-requests');
+            if (tbody2) {
+                const tr2 = document.createElement('tr');
+                tr2.innerHTML = rowHTML;
+                tbody2.insertBefore(tr2, tbody2.firstChild);
+            }
 
             document.getElementById('req-proposed-name').value = '';
             document.getElementById('req-description').value = '';
