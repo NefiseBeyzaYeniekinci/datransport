@@ -1720,6 +1720,14 @@ function populateStopDropdowns(stops) {
     selectStart.innerHTML = '';
     selectEnd.innerHTML = '';
 
+    const defOpt1 = new Option('-- Lütfen Kalkış Durağı Seçin veya Arayın --', '');
+    defOpt1.disabled = true;
+    selectStart.add(defOpt1);
+
+    const defOpt2 = new Option('-- Lütfen Varış Durağı Seçin veya Arayın --', '');
+    defOpt2.disabled = true;
+    selectEnd.add(defOpt2);
+
     stops.forEach((s) => {
         const opt1 = new Option(`${s.stop_id} - ${s.stop_name}`, s.stop_id);
         const opt2 = new Option(`${s.stop_id} - ${s.stop_name}`, s.stop_id);
@@ -1727,7 +1735,9 @@ function populateStopDropdowns(stops) {
         selectEnd.add(opt2);
     });
 
-    if (selectEnd.options.length > 5) selectEnd.selectedIndex = 5;
+    if (selectStart.options.length > 1) selectStart.selectedIndex = 1;
+    if (selectEnd.options.length > 6) selectEnd.selectedIndex = 6;
+
     if (lblStart) lblStart.textContent = `${stops.length} durak bulundu`;
     if (lblEnd) lblEnd.textContent = `${stops.length} durak bulundu`;
 }
@@ -1861,20 +1871,30 @@ function onModeChanged() {
 }
 
 async function calculateCO2() {
-    const mode = document.getElementById('calc-mode').value;
-    const busModel = document.getElementById('calc-bus-model').value;
-    const startStopId = document.getElementById('calc-start-stop').value;
-    const endStopId = document.getElementById('calc-end-stop').value;
+    const busModelEl = document.getElementById('calc-bus-model');
+    const busModel = busModelEl ? busModelEl.value : "MAN Lion's City (Solo)";
+    const startSelect = document.getElementById('calc-start-stop');
+    const endSelect = document.getElementById('calc-end-stop');
 
-    const startText = document.getElementById('calc-start-stop').options[document.getElementById('calc-start-stop').selectedIndex]?.text || '10002 - Demokrasi Meydanı';
-    const endText = document.getElementById('calc-end-stop').options[document.getElementById('calc-end-stop').selectedIndex]?.text || '10005 - Karataş 1. Bölge Çarşı';
+    if (!startSelect || !endSelect) return;
+
+    const startStopId = startSelect.value;
+    const endStopId = endSelect.value;
+
+    const startOption = startSelect.options[startSelect.selectedIndex];
+    const endOption = endSelect.options[endSelect.selectedIndex];
+
+    if (!startOption || !endOption || !startStopId || !endStopId) return;
+
+    const startText = startOption.text;
+    const endText = endOption.text;
 
     try {
         const res = await fetch('/api/calculate-co2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                mode: mode,
+                mode: 'Otobüs',
                 bus_model: busModel,
                 start_stop_id: startStopId,
                 end_stop_id: endStopId
@@ -1892,20 +1912,35 @@ async function calculateCO2() {
             const savedCo2 = (busCo2 - tramCo2).toFixed(2);
             const treesEarned = (savedCo2 * 1.36).toFixed(1);
 
-            document.getElementById('cmp-distance-header').textContent = `Mesafe: ${dist} km`;
-            document.getElementById('cmp-route-subtitle').textContent = `${startText} ➔ ${endText}`;
+            const distEl = document.getElementById('cmp-distance-header');
+            if (distEl) distEl.textContent = `Mesafe: ${dist} km`;
 
-            document.getElementById('cmp-bus-co2').textContent = `${busCo2} kg CO2`;
-            document.getElementById('cmp-bus-time').textContent = `~${Math.round(dist * 3.3)} dk seyahat`;
+            const subtitleEl = document.getElementById('cmp-route-subtitle');
+            if (subtitleEl) subtitleEl.textContent = `${startText} ➔ ${endText}`;
 
-            document.getElementById('cmp-tram-co2').textContent = `${tramCo2} kg CO2`;
-            document.getElementById('cmp-tram-time').textContent = `~${Math.round(dist * 2.6)} dk seyahat`;
+            const busCo2El = document.getElementById('cmp-bus-co2');
+            if (busCo2El) busCo2El.textContent = `${busCo2} kg CO2`;
 
-            document.getElementById('cmp-saving-text').textContent = `Düşük emisyonlu mod seçimi ile ${savedCo2} kg CO2 tasarruf sağlandı.`;
-            document.getElementById('cmp-tree-badge').innerHTML = `<i class="fa-solid fa-tree"></i> ${treesEarned} Ağaç Kazancı`;
+            const busTimeEl = document.getElementById('cmp-bus-time');
+            if (busTimeEl) busTimeEl.textContent = `~${Math.round(dist * 3.3)} dk seyahat`;
 
-            document.getElementById('txt-traffic-percent').textContent = `%${r.traffic_pct} • Akıcı Şehir Trafiği`;
-            document.getElementById('txt-traffic-factor').textContent = `Dur-Kalk Etkisi: CO2 Emisyonu +%${r.traffic_increase_pct}`;
+            const tramCo2El = document.getElementById('cmp-tram-co2');
+            if (tramCo2El) tramCo2El.textContent = `${tramCo2} kg CO2`;
+
+            const tramTimeEl = document.getElementById('cmp-tram-time');
+            if (tramTimeEl) tramTimeEl.textContent = `~${Math.round(dist * 2.6)} dk seyahat`;
+
+            const savingEl = document.getElementById('cmp-saving-text');
+            if (savingEl) savingEl.textContent = `Düşük emisyonlu mod seçimi ile ${savedCo2} kg CO2 tasarruf sağlandı.`;
+
+            const treeEl = document.getElementById('cmp-tree-badge');
+            if (treeEl) treeEl.innerHTML = `<i class="fa-solid fa-tree"></i> ${treesEarned} Ağaç Kazancı`;
+
+            const trafficPctEl = document.getElementById('txt-traffic-percent');
+            if (trafficPctEl) trafficPctEl.textContent = `%${r.traffic_pct} • Akıcı Şehir Trafiği`;
+
+            const trafficFactEl = document.getElementById('txt-traffic-factor');
+            if (trafficFactEl) trafficFactEl.textContent = `Dur-Kalk Etkisi: CO2 Emisyonu +%${r.traffic_increase_pct}`;
 
             updateCO2Charts(dist, r.traffic_pct);
         }
