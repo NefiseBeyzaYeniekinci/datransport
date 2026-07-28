@@ -53,6 +53,32 @@ document.addEventListener("DOMContentLoaded", () => {
     updateAISimulator();
 });
 
+// Modal System Handlers
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.active').forEach(m => {
+            m.classList.remove('active');
+        });
+        document.body.style.overflow = '';
+    }
+});
+
 // Phone Number Input Formatting (Strict Max 11 Digits, Format 05XX XXX XX XX)
 function formatPhoneNumber(input) {
     let digits = input.value.replace(/\D/g, '');
