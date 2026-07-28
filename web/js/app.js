@@ -423,9 +423,11 @@ function renderVerticalAccordionMenu(filterQuery = '') {
     const query = filterQuery.toLowerCase().trim();
     const isAccessOnly = document.getElementById('accessibility-filter-toggle')?.checked || false;
 
-    const busRoutes = allRoutes.filter(r => !r.route_code.startsWith('T') && !r.route_code.startsWith('GR'));
-    const tramRoutes = allRoutes.filter(r => r.route_code.startsWith('T'));
-    const grRoutes = allRoutes.filter(r => r.route_code.startsWith('GR'));
+    const mainTramCodes = ['T1', 'T2', 'T3'];
+    const busRoutes = allRoutes.filter(r => !mainTramCodes.includes(r.route_code.toUpperCase()) && !r.route_code.toUpperCase().startsWith('TA') && !r.route_code.toUpperCase().startsWith('GR'));
+    const mainTramRoutes = allRoutes.filter(r => mainTramCodes.includes(r.route_code.toUpperCase()));
+    const tramTransferRoutes = allRoutes.filter(r => r.route_code.toUpperCase().startsWith('TA'));
+    const grRoutes = allRoutes.filter(r => r.route_code.toUpperCase().startsWith('GR'));
 
     const categories = [
         {
@@ -462,23 +464,47 @@ function renderVerticalAccordionMenu(filterQuery = '') {
             icon: 'fa-train-subway',
             color: '#dc2626',
             bgColor: '#fef2f2',
-            count: tramRoutes.length || 3,
+            count: (mainTramRoutes.length || 3) + (tramTransferRoutes.length > 0 ? ` (+${tramTransferRoutes.length} Aktarma)` : ''),
             renderContent: (bodyEl) => {
-                const list = tramRoutes.length > 0 ? tramRoutes : [
-                    { route_code: 'T1', route_name: 'T1: İBN-İ SİNA - GAR (Tramvay)' },
-                    { route_code: 'T2', route_name: 'T2: ADLİYE - GAR (Tramvay)' },
-                    { route_code: 'T3', route_name: 'T3: ADLİYE - BURÇ KAVŞAĞI (Tramvay)' }
+                const mainList = mainTramRoutes.length > 0 ? mainTramRoutes : [
+                    { route_code: 'T1', route_name: 'T1 - İbni Sina-Gar (Ana Tramvay Hattı)' },
+                    { route_code: 'T2', route_name: 'T2 - Adliye-Gar (Ana Tramvay Hattı)' },
+                    { route_code: 'T3', route_name: 'T3 - Adliye-Burç (Ana Tramvay Hattı)' }
                 ];
-                list.forEach(r => {
+                mainList.forEach(r => {
                     const item = document.createElement('div');
                     item.className = 'route-list-item';
                     item.onclick = (e) => { e.stopPropagation(); selectRoute(r.route_code); };
                     item.innerHTML = `
                         <div class="route-code-badge red-badge">${r.route_code}</div>
-                        <div class="route-name-text">${r.route_name}</div>
+                        <div class="route-name-text" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                            <span>${r.route_name}</span>
+                            <span style="font-size: 0.68rem; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 6px; font-weight: 800; border: 1.5px solid #fca5a5; white-space: nowrap;">Ana Raylı Hat</span>
+                        </div>
                     `;
                     bodyEl.appendChild(item);
                 });
+
+                if (tramTransferRoutes.length > 0) {
+                    const divider = document.createElement('div');
+                    divider.style.cssText = 'padding: 6px 14px; font-size: 0.75rem; font-weight: 800; color: #64748b; background: #f1f5f9; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 6px;';
+                    divider.innerHTML = '<i class="fa-solid fa-arrow-right-arrow-left" style="color: #f97316;"></i> Tramvay Besleme & Aktarma Hatları';
+                    bodyEl.appendChild(divider);
+
+                    tramTransferRoutes.forEach(r => {
+                        const item = document.createElement('div');
+                        item.className = 'route-list-item';
+                        item.onclick = (e) => { e.stopPropagation(); selectRoute(r.route_code); };
+                        item.innerHTML = `
+                            <div class="route-code-badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;">${r.route_code}</div>
+                            <div class="route-name-text" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                                <span>${r.route_name}</span>
+                                <span style="font-size: 0.68rem; background: #fff7ed; color: #c2410c; padding: 2px 6px; border-radius: 6px; font-weight: 800; border: 1px solid #ffedd5; white-space: nowrap;">Aktarma Hattı</span>
+                            </div>
+                        `;
+                        bodyEl.appendChild(item);
+                    });
+                }
             }
         },
         {
