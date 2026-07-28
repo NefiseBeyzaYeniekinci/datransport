@@ -723,8 +723,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">1. İlgili Otobüs veya Tramvay Hattı:</label>
-                    <select id="req-route-select" class="form-select" onchange="onRequestRouteSelectChanged()"></select>
+                    <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>1. İlgili Otobüs veya Tramvay Hattı Ara & Seç:</span>
+                        <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px;" id="lbl-request-route-count">Hatlar Yükleniyor...</span>
+                    </label>
+                    <input type="text" id="search-request-route" class="form-input" placeholder="🔍 Hat kodu veya güzergah adı yazın (Örn: B01, T1, Gazikent)..." oninput="filterRequestRouteOptions()" style="margin-bottom: 8px;">
+                    <div style="position: relative;">
+                        <select id="req-route-select" class="form-select" onchange="onRequestRouteSelectChanged()"></select>
+                    </div>
                 </div>
 
                 <div id="box-nearest-stops-calc" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px; margin-bottom: 1.25rem;">

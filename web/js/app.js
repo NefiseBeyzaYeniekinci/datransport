@@ -420,16 +420,65 @@ async function loadRoutes() {
     }
 }
 
+let allRoutesList = [];
+
 function populateRequestRouteSelect(routes) {
+    if (routes && Array.isArray(routes)) {
+        allRoutesList = routes;
+    }
     const reqSelect = document.getElementById('req-route-select');
+    const countBadge = document.getElementById('lbl-request-route-count');
     if (!reqSelect) return;
     reqSelect.innerHTML = '';
-    routes.forEach(r => {
+    
+    allRoutesList.forEach(r => {
         const opt = document.createElement('option');
         opt.value = r.route_code;
         opt.textContent = `${r.route_code} - ${r.route_name}`;
         reqSelect.appendChild(opt);
     });
+
+    if (countBadge) {
+        countBadge.textContent = `${allRoutesList.length} hat bulundu`;
+    }
+}
+
+function filterRequestRouteOptions() {
+    const searchInput = document.getElementById('search-request-route');
+    const selectEl = document.getElementById('req-route-select');
+    const countBadge = document.getElementById('lbl-request-route-count');
+
+    if (!searchInput || !selectEl || !allRoutesList) return;
+
+    const qRaw = searchInput.value.trim();
+    const qNorm = trNormalize(qRaw);
+    selectEl.innerHTML = '';
+
+    const filtered = allRoutesList.filter(r => {
+        if (!qNorm) return true;
+        const codeNorm = trNormalize(r.route_code || '');
+        const nameNorm = trNormalize(r.route_name || '');
+        return codeNorm.includes(qNorm) || nameNorm.includes(qNorm);
+    });
+
+    if (filtered.length === 0) {
+        const opt = new Option(`❌ "${qRaw}" adında hat bulunamadı`, '');
+        opt.disabled = true;
+        selectEl.add(opt);
+    } else {
+        filtered.forEach(r => {
+            const opt = new Option(`${r.route_code} - ${r.route_name}`, r.route_code);
+            selectEl.add(opt);
+        });
+    }
+
+    if (countBadge) {
+        countBadge.textContent = `${filtered.length} hat bulundu`;
+    }
+
+    if (typeof onRequestRouteSelectChanged === 'function') {
+        onRequestRouteSelectChanged();
+    }
 }
 
 let expandedCategories = {
