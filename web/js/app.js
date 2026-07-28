@@ -268,14 +268,14 @@ function toggleRulerTool() {
     const btn = document.getElementById('btn-toggle-ruler');
     const banner = document.getElementById('ruler-info-banner');
 
+    if (btn) {
+        btn.classList.toggle('active', isRulerActive);
+    }
+
     if (isRulerActive) {
-        btn.innerHTML = '<i class="fa-solid fa-ruler-combined" style="margin-right: 4px;"></i> Mesafe Ölçer (Aktif)';
-        btn.style.background = "linear-gradient(135deg, #10b981, #059669)";
         banner.style.display = 'flex';
         document.getElementById('ruler-text').textContent = "Haritada yollar üzerinden gerçek mesafesini ölçmek istediğiniz 2 noktaya tıklayın";
     } else {
-        btn.innerHTML = '<i class="fa-solid fa-ruler-combined" style="margin-right: 4px;"></i> Mesafe Ölçer (Aktif Değil)';
-        btn.style.background = "linear-gradient(135deg, #f97316, #ea580c)";
         banner.style.display = 'none';
         clearRulerMeasurement();
     }
