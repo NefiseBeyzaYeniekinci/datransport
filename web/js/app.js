@@ -1103,7 +1103,20 @@ async function submitParkingReservation() {
             myTable.insertBefore(tr, myTable.firstChild);
         }
 
-        alert(`Otopark Araç Park Yeri Randevunuz Başarıyla Oluşturuldu!\n\nRezervasyon Kodu: ${code}\nOtopark: ${parkingObj.name}\nPlaka: ${plate}\nSaatler: ${startTime} - ${endTime}\nSürücü: ${driverName}`);
+        showCustomMessageBox({
+            title: 'Otopark Araç Park Yeri Randevunuz Oluşturuldu!',
+            subtitle: 'Aracınız için park yeri ayrılmıştır. Giriş saatinde sıra beklemeden giriş yapabilirsiniz.',
+            icon: 'fa-square-parking',
+            iconBg: '#e0f2fe',
+            iconColor: '#0284c7',
+            details: [
+                { label: 'Rezervasyon Kodu', value: code, color: '#0284c7' },
+                { label: 'Otopark Konumu', value: parkingObj.name, color: '#0f172a' },
+                { label: 'Araç Plakası', value: plate, color: '#0369a1' },
+                { label: 'Park Saatleri', value: `${startTime} - ${endTime}`, color: '#0284c7' },
+                { label: 'Sürücü Adı', value: driverName, color: '#059669' }
+            ]
+        });
 
         if (document.getElementById('prk-plate')) document.getElementById('prk-plate').value = '';
         if (document.getElementById('prk-driver-name')) document.getElementById('prk-driver-name').value = '';
@@ -1409,7 +1422,20 @@ async function submitGaziBisReservation() {
             myTable.insertBefore(tr, myTable.firstChild);
         }
 
-        alert(`GaziBis Bisiklet Kiralama Randevunuz Oluşturuldu!\n\nRandevu Kodu: ${code}\nTeslim Alınacak: ${pickupStationObj.name}\nBırakılacak: ${dropoffStationObj.name}\nSaatler: ${startTime} - ${endTime}\nKullanıcı: ${name}`);
+        showCustomMessageBox({
+            title: 'GaziBis Bisiklet Randevunuz Oluşturuldu!',
+            subtitle: 'Bisikletiniz belirttiğiniz istasyonda seçtiğiniz saat aralığı için rezerve edilmiştir.',
+            icon: 'fa-bicycle',
+            iconBg: '#f3e8ff',
+            iconColor: '#8b5cf6',
+            details: [
+                { label: 'Randevu Kodu', value: code, color: '#7c3aed' },
+                { label: 'Teslim Alınacak', value: pickupStationObj.name, color: '#0f172a' },
+                { label: 'Bırakılacak İstasyon', value: dropoffStationObj.name, color: '#0f172a' },
+                { label: 'Kiralama Saatleri', value: `${startTime} - ${endTime}`, color: '#6d28d9' },
+                { label: 'Kullanıcı Adı', value: name, color: '#059669' }
+            ]
+        });
 
         if (document.getElementById('gbis-name')) document.getElementById('gbis-name').value = '';
         if (document.getElementById('gbis-phone')) document.getElementById('gbis-phone').value = '';
@@ -1532,22 +1558,74 @@ function closeScheduleModal() {
     document.getElementById('schedule-modal').classList.remove('active');
 }
 
-function showSuccessModal(data) {
-    const modal = document.getElementById('success-modal');
-    document.getElementById('succ-modal-id').textContent = data.request_id || 'TLP-20260724-8256';
-    document.getElementById('succ-modal-route').textContent = data.route_code || 'B01';
+function formatLicensePlate(input) {
+    if (!input) return;
+    let val = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (val.length > 10) val = val.substring(0, 10);
 
-    const pText = document.getElementById('txt-nearest-prev').textContent.replace('Önceki Durak:', '').trim();
-    const nText = document.getElementById('txt-nearest-next').textContent.replace('Sonraki Durak:', '').trim();
-
-    document.getElementById('succ-modal-prev').textContent = pText || 'Tespit Edildi';
-    document.getElementById('succ-modal-next').textContent = nText || 'Tespit Edildi';
-
-    modal.classList.add('active');
+    if (/^\d{2}/.test(val)) {
+        const city = val.substring(0, 2);
+        const rest = val.substring(2);
+        
+        const lettersMatch = rest.match(/^[A-Z]+/);
+        if (lettersMatch) {
+            const letters = lettersMatch[0].substring(0, 3);
+            const digits = rest.substring(letters.length).replace(/[^0-9]/g, '').substring(0, 4);
+            val = `${city} ${letters}${digits ? ' ' + digits : ''}`;
+        } else if (rest.length > 0) {
+            val = `${city} ${rest}`;
+        } else {
+            val = city;
+        }
+    }
+    input.value = val;
 }
 
-function closeSuccessModal() {
-    document.getElementById('success-modal').classList.remove('active');
+function showCustomMessageBox(config) {
+    const modal = document.getElementById('custom-message-modal');
+    if (!modal) return;
+
+    const iconEl = document.getElementById('msg-box-icon');
+    const titleEl = document.getElementById('msg-box-title');
+    const subtitleEl = document.getElementById('msg-box-subtitle');
+    const detailsEl = document.getElementById('msg-box-details');
+
+    if (iconEl) {
+        iconEl.innerHTML = `<i class="fa-solid ${config.icon || 'fa-check'}"></i>`;
+        iconEl.style.background = config.iconBg || '#d1fae5';
+        iconEl.style.color = config.iconColor || '#059669';
+        iconEl.style.boxShadow = `0 4px 14px ${config.iconColor || '#059669'}40`;
+    }
+
+    if (titleEl) titleEl.textContent = config.title || 'İşlem Başarıyla Tamamlandı!';
+    if (subtitleEl) subtitleEl.textContent = config.subtitle || 'Talebiniz sistem tarafından kaydedilmiştir.';
+
+    if (detailsEl) {
+        detailsEl.innerHTML = '';
+        if (config.details && Array.isArray(config.details)) {
+            config.details.forEach(item => {
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-between';
+                row.style.alignItems = 'center';
+                row.style.fontSize = '0.86rem';
+                row.innerHTML = `
+                    <span style="color: #64748b; font-weight: 600;">${item.label}:</span>
+                    <strong style="color: ${item.color || '#0f172a'};">${item.value}</strong>
+                `;
+                detailsEl.appendChild(row);
+            });
+        }
+    }
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCustomMessageBox() {
+    const modal = document.getElementById('custom-message-modal');
+    if (modal) modal.classList.remove('active');
+    document.body.style.overflow = '';
 }
 
 async function loadStops() {
@@ -1614,7 +1692,23 @@ async function submitStopRequest() {
 
         if (json.success && json.data) {
             const d = json.data;
-            showSuccessModal(d);
+            const pText = document.getElementById('txt-nearest-prev')?.textContent.replace('Önceki Durak:', '').trim();
+            const nText = document.getElementById('txt-nearest-next')?.textContent.replace('Sonraki Durak:', '').trim();
+
+            showCustomMessageBox({
+                title: 'Durak Talebi Başarıyla Alındı!',
+                subtitle: 'Talebiniz Ulaşım Daire Başkanlığı sistemine başarıyla iletilmiştir.',
+                icon: 'fa-plus-circle',
+                iconBg: '#dbeafe',
+                iconColor: '#2563eb',
+                details: [
+                    { label: 'Talep Takip Kodu', value: d.request_id || 'TLP-20260724', color: '#2563eb' },
+                    { label: 'İlgili Hat', value: d.route_code || 'B01', color: '#0f172a' },
+                    { label: 'Önerilen Durak', value: d.proposed_stop_name || 'Yeni Ara Durak', color: '#059669' },
+                    { label: 'Önceki Durak', value: pText || 'Tespit Edildi', color: '#64748b' },
+                    { label: 'Sonraki Durak', value: nText || 'Tespit Edildi', color: '#d97706' }
+                ]
+            });
 
             const tbody = document.getElementById('table-submitted-requests');
             const tr = document.createElement('tr');

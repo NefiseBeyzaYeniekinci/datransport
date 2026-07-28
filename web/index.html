@@ -862,16 +862,6 @@
                     <input type="tel" id="gbis-phone" class="form-input" maxlength="14" placeholder="05XX XXX XX XX" oninput="formatPhoneNumber(this)">
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">7. Kiralama Paketi:</label>
-                    <select id="gbis-duration" class="form-select">
-                        <option value="1 Saat">1 Saat Kiralama (Ücretsiz / Akıllı Kart)</option>
-                        <option value="2 Saat" selected>2 Saat Kiralama</option>
-                        <option value="4 Saat">4 Saat Kiralama</option>
-                        <option value="Tam Gün">Tam Gün Kiralama</option>
-                    </select>
-                </div>
-
                 <button class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);" onclick="submitGaziBisReservation(); closeModal('modal-gazibis-rent');">
                     <i class="fa-solid fa-key"></i> GaziBis Bisiklet Randevusu Oluştur
                 </button>
@@ -911,7 +901,7 @@
 
                 <div class="form-group">
                     <label class="form-label">4. Araç Plaka Numarası:</label>
-                    <input type="text" id="prk-plate" class="form-input" placeholder="Örn: 27 ABC 123" style="text-transform: uppercase;" maxlength="10">
+                    <input type="text" id="prk-plate" class="form-input" placeholder="Örn: 27 NB 2005" style="text-transform: uppercase;" maxlength="10" oninput="formatLicensePlate(this)">
                 </div>
 
                 <div class="form-group">
@@ -927,16 +917,6 @@
                     <input type="tel" id="prk-phone" class="form-input" maxlength="14" placeholder="05XX XXX XX XX" oninput="formatPhoneNumber(this)">
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">7. Tahmini Park Süresi:</label>
-                    <select id="prk-duration" class="form-select">
-                        <option value="1 Saat">1 Saat Park (Standart)</option>
-                        <option value="2 Saat" selected>2 Saat Park</option>
-                        <option value="4 Saat">4 Saat Park</option>
-                        <option value="Tam Gün">Tam Gün (Abonelik / Tüm Gün)</option>
-                    </select>
-                </div>
-
                 <button class="btn-primary" style="background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="submitParkingReservation(); closeModal('modal-parking-reserve');">
                     <i class="fa-solid fa-square-parking"></i> Otopark Park Yerimi Rezerve Et
                 </button>
@@ -944,21 +924,19 @@
         </div>
     </div>
 
-    <!-- CUSTOM SUCCESS MODAL DIALOG -->
-    <div id="success-modal" class="modal-backdrop">
-        <div class="modal-card" style="text-align: center;">
-            <div style="width: 60px; height: 60px; background: #d1fae5; color: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1rem auto;">
+    <!-- UNIVERSAL CUSTOM MESSAGE BOX MODAL -->
+    <div id="custom-message-modal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 480px; text-align: center; padding: 2rem;">
+            <div id="msg-box-icon" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.25rem auto; background: #d1fae5; color: #059669; box-shadow: 0 4px 14px rgba(16,185,129,0.25);">
                 <i class="fa-solid fa-check"></i>
             </div>
-            <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">Durak Talebi Başarıyla Alındı!</h3>
-            <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 1.25rem;">Talebiniz Gaziantep Büyükşehir Belediyesi Ulaşım Daire Başkanlığı sistemine kaydedilmiştir.</p>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; text-align: left; font-size: 0.88rem; margin-bottom: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #64748b; font-weight: 600;">Talep Takip No:</span><strong id="succ-modal-id" style="color: #2563eb;">TLP-20260724-8256</strong></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #64748b; font-weight: 600;">İlgili Hat:</span><strong id="succ-modal-route" style="color: #0f172a;">B01 GAZİKENT-ENSAR SİTESİ</strong></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #64748b; font-weight: 600;">Önceki En Yakın Durak:</span><strong id="succ-modal-prev" style="color: #059669;">Gazikent Son Durak</strong></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color: #64748b; font-weight: 600;">Sonraki En Yakın Durak:</span><strong id="succ-modal-next" style="color: #d97706;">Rayalp Apt.</strong></div>
+            <h3 id="msg-box-title" style="font-size: 1.3rem; font-weight: 900; color: #0f172a; margin-bottom: 0.5rem;">İşlem Başarıyla Tamamlandı!</h3>
+            <p id="msg-box-subtitle" style="font-size: 0.88rem; color: #64748b; margin-bottom: 1.25rem;">Talebiniz sistem tarafından onaylanmış ve kaydedilmiştir.</p>
+            
+            <div id="msg-box-details" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 16px; text-align: left; font-size: 0.88rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 8px;">
             </div>
-            <button class="btn-primary" onclick="closeSuccessModal()">
+
+            <button class="btn-primary" onclick="closeCustomMessageBox()" style="width: 100%; border-radius: 12px; padding: 12px; font-weight: 800; font-size: 0.95rem;">
                 <i class="fa-solid fa-circle-check"></i> Harika, Tamam
             </button>
         </div>
