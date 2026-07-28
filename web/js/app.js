@@ -2286,121 +2286,206 @@ function downloadAccessibilityCSV() {
     triggerCSVDownload("Gaziantep_Engelsiz_Ulasim_Erisilebilirlik_Veri_Seti.csv", csv);
 }
 
-/* FLOATING AI SMART CHATBOT WIDGET HANDLERS */
-let isAIChatOpen = false;
+// ============================================================
+//   AI CHAT WIDGET
+// ============================================================
 
-function toggleAIChatWindow() {
-    const win = document.getElementById('ai-chat-window');
-    const icon = document.getElementById('ai-chat-icon');
-    if (!win) return;
+let aiChatOpen = false;
+let aiChatHistory = [];
+let aiTypingTimer = null;
 
-    isAIChatOpen = !isAIChatOpen;
-    if (isAIChatOpen) {
-        win.style.display = 'flex';
-        if (icon) icon.className = 'fa-solid fa-xmark';
-        const input = document.getElementById('ai-chat-input');
-        if (input) input.focus();
+/** Paneli aç/kapat */
+function toggleAIChat() {
+    const panel = document.getElementById('ai-chat-panel');
+    const badge = document.getElementById('ai-chat-badge');
+    aiChatOpen = !aiChatOpen;
+
+    if (aiChatOpen) {
+        panel.style.display = 'flex';
+        // Yeniden animasyon tetikle
+        panel.style.animation = 'none';
+        panel.offsetHeight; // reflow
+        panel.style.animation = '';
+        if (badge) badge.style.display = 'none';
+        // Input'a focus ver
+        setTimeout(() => {
+            const input = document.getElementById('ai-chat-input');
+            if (input) input.focus();
+        }, 350);
     } else {
-        win.style.display = 'none';
-        if (icon) icon.className = 'fa-solid fa-robot';
+        panel.style.display = 'none';
     }
 }
 
-function handleAIChatKeyPress(e) {
-    if (e.key === 'Enter') {
-        sendAIChatMessage();
-    }
-}
-
-function sendQuickAIChatQuestion(qText) {
+/** Kullanıcı mesajı gönder */
+function sendAIMessage() {
     const input = document.getElementById('ai-chat-input');
-    if (input) input.value = qText;
-    sendAIChatMessage();
-}
-
-async function sendAIChatMessage() {
-    const input = document.getElementById('ai-chat-input');
-    const container = document.getElementById('ai-chat-messages');
-    if (!input || !container) return;
-
-    const messageText = input.value.trim();
-    if (!messageText) return;
-
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
     input.value = '';
 
-    const userBubble = document.createElement('div');
-    userBubble.style.cssText = 'display: flex; justify-content: flex-end; margin-bottom: 8px;';
-    userBubble.innerHTML = `
-        <div style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border-radius: 16px; border-top-right-radius: 4px; padding: 10px 14px; font-size: 0.85rem; max-width: 82%; line-height: 1.45; box-shadow: 0 3px 10px rgba(37,99,235,0.25);">
-            ${escapeHTML(messageText)}
+    // İlk hızlı öneri butonlarını gizle
+    const sugContainer = document.getElementById('ai-suggestions-container');
+    if (sugContainer) sugContainer.style.display = 'none';
+
+    appendUserBubble(text);
+    aiChatHistory.push({ role: 'user', content: text });
+    showTypingIndicator();
+
+    // Backend'e gönder
+    const sendBtn = document.querySelector('.ai-send-btn');
+    if (sendBtn) sendBtn.disabled = true;
+
+    fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: aiChatHistory.slice(-8) })
+    })
+    .then(r => r.json())
+    .then(data => {
+        hideTypingIndicator();
+        if (sendBtn) sendBtn.disabled = false;
+        if (data.success) {
+            const reply = data.reply || 'Bir yanıt alınamadı.';
+            aiChatHistory.push({ role: 'assistant', content: reply });
+            appendBotBubble(reply, data.suggestions || []);
+        } else {
+            appendBotBubble('⚠️ Bir hata oluştu. Lütfen tekrar deneyin.', []);
+        }
+    })
+    .catch(() => {
+        hideTypingIndicator();
+        if (sendBtn) sendBtn.disabled = false;
+        appendBotBubble('⚠️ Sunucuya bağlanılamadı. Flask sunucusunun çalıştığından emin olun (`python server.py`).', []);
+    });
+}
+
+/** Öneri chip'ine tıklanınca */
+function sendAISuggestion(text) {
+    const input = document.getElementById('ai-chat-input');
+    if (input) input.value = text;
+    sendAIMessage();
+}
+
+/** Kullanıcı mesaj baloncuğu ekle */
+function appendUserBubble(text) {
+    const container = document.getElementById('ai-chat-messages');
+    if (!container) return;
+    const row = document.createElement('div');
+    row.className = 'ai-msg-row ai-msg-user';
+    row.innerHTML = `
+        <div class="ai-bubble ai-bubble-user">
+            <div class="ai-bubble-text">${escapeHtml(text)}</div>
+            <div class="ai-bubble-time">${getCurrentTime()}</div>
+        </div>`;
+    container.appendChild(row);
+    scrollChatToBottom();
+}
+
+/** Bot mesaj baloncuğu ekle */
+function appendBotBubble(markdownText, suggestions) {
+    const container = document.getElementById('ai-chat-messages');
+    if (!container) return;
+    const row = document.createElement('div');
+    row.className = 'ai-msg-row ai-msg-bot';
+
+    // Öneri chip'lerini oluştur
+    let chipsHtml = '';
+    if (suggestions && suggestions.length > 0) {
+        const chips = suggestions.map(s =>
+            `<button class="ai-suggestion-chip" onclick="sendAISuggestion('${escapeAttr(s)}')">${escapeHtml(s)}</button>`
+        ).join('');
+        chipsHtml = `<div class="ai-suggestions-wrap" style="padding-left:0;margin-top:8px;">${chips}</div>`;
+    }
+
+    row.innerHTML = `
+        <div class="ai-avatar">🤖</div>
+        <div style="display:flex;flex-direction:column;gap:6px;max-width:85%;">
+            <div class="ai-bubble ai-bubble-bot">
+                <div class="ai-bubble-text">${markdownToHtml(markdownText)}</div>
+                <div class="ai-bubble-time">${getCurrentTime()}</div>
+            </div>
+            ${chipsHtml}
+        </div>`;
+    container.appendChild(row);
+    scrollChatToBottom();
+}
+
+/** Yazıyor göstergesi */
+function showTypingIndicator() {
+    const el = document.getElementById('ai-typing-indicator');
+    if (el) {
+        el.style.display = 'flex';
+        scrollChatToBottom();
+    }
+}
+function hideTypingIndicator() {
+    const el = document.getElementById('ai-typing-indicator');
+    if (el) el.style.display = 'none';
+}
+
+/** Sohbeti temizle */
+function clearAIChat() {
+    aiChatHistory = [];
+    const container = document.getElementById('ai-chat-messages');
+    if (!container) return;
+    container.innerHTML = `
+        <div class="ai-msg-row ai-msg-bot">
+            <div class="ai-avatar">🤖</div>
+            <div class="ai-bubble ai-bubble-bot">
+                <div class="ai-bubble-text">Sohbet temizlendi! 🧹 Yeni bir şeyler sorabilirsiniz.</div>
+                <div class="ai-bubble-time">${getCurrentTime()}</div>
+            </div>
         </div>
-    `;
-    container.appendChild(userBubble);
+        <div class="ai-suggestions-wrap">
+            <button class="ai-suggestion-chip" onclick="sendAISuggestion('Hangi hattı kullansam?')">🚌 Hangi hattı kullansam?</button>
+            <button class="ai-suggestion-chip" onclick="sendAISuggestion('CO2 tasarrufu nasıl hesaplanır?')">🌿 CO2 hesaplama</button>
+            <button class="ai-suggestion-chip" onclick="sendAISuggestion('GaziBis nedir?')">🚲 GaziBis nedir?</button>
+            <button class="ai-suggestion-chip" onclick="sendAISuggestion('Otopark nerede?')">🅿️ Otopark</button>
+        </div>`;
+}
 
-    const typingBubble = document.createElement('div');
-    typingBubble.id = 'ai-typing-indicator';
-    typingBubble.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-bottom: 8px;';
-    typingBubble.innerHTML = `
-        <div style="width: 32px; height: 32px; border-radius: 50%; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; flex-shrink: 0;">
-            <i class="fa-solid fa-robot"></i>
-        </div>
-        <div style="background: white; border: 1.5px solid #e2e8f0; border-radius: 16px; border-top-left-radius: 4px; padding: 10px 14px; font-size: 0.82rem; color: #64748b; font-weight: 700; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-spinner fa-spin" style="color: #2563eb;"></i> Yapay zeka düşünüyor ve yanıt hazırlıyor...
-        </div>
-    `;
-    container.appendChild(typingBubble);
-    container.scrollTop = container.scrollHeight;
-
-    try {
-        const res = await fetch('/api/ai-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: messageText })
-        });
-        const json = await res.json();
-
-        const typingEl = document.getElementById('ai-typing-indicator');
-        if (typingEl) typingEl.remove();
-
-        const aiResponseText = json.response || "Anlayamadım, lütfen tekrar sorunuz.";
-
-        const formattedResp = aiResponseText
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\n/g, '<br>');
-
-        const aiBubble = document.createElement('div');
-        aiBubble.style.cssText = 'display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px;';
-        aiBubble.innerHTML = `
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; flex-shrink: 0; margin-top: 2px; box-shadow: 0 4px 10px rgba(37,99,235,0.3);">
-                <i class="fa-solid fa-robot"></i>
-            </div>
-            <div style="background: white; border: 1.5px solid #cbd5e1; border-radius: 16px; border-top-left-radius: 4px; padding: 12px 14px; font-size: 0.85rem; color: #0f172a; line-height: 1.5; box-shadow: 0 4px 12px rgba(15,23,42,0.06); max-width: 86%;">
-                ${formattedResp}
-            </div>
-        `;
-        container.appendChild(aiBubble);
-        container.scrollTop = container.scrollHeight;
-
-    } catch (err) {
-        console.error("AI Chat Error:", err);
-        const typingEl = document.getElementById('ai-typing-indicator');
-        if (typingEl) typingEl.remove();
-
-        const errBubble = document.createElement('div');
-        errBubble.style.cssText = 'display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px;';
-        errBubble.innerHTML = `
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: #ef4444; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; flex-shrink: 0;">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <div style="background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 16px; border-top-left-radius: 4px; padding: 12px 14px; font-size: 0.85rem; color: #b91c1c;">
-                Bağlantı hatası oluştu. Sunucunun aktif olduğundan emin olun.
-            </div>
-        `;
-        container.appendChild(errBubble);
-        container.scrollTop = container.scrollHeight;
+/** Chat panelini en alta kaydır */
+function scrollChatToBottom() {
+    const container = document.getElementById('ai-chat-messages');
+    if (container) {
+        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 60);
     }
 }
 
-function escapeHTML(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/** Şu anki saati HH:MM formatında döndür */
+function getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 }
+
+/** Basit Markdown → HTML dönüştürücü */
+function markdownToHtml(text) {
+    if (!text) return '';
+    return text
+        // Başlıkları işle
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Satır başı madde işaretleri
+        .replace(/^• (.+)$/gm, '<li style="margin:2px 0;padding-left:4px;">$1</li>')
+        .replace(/^(\d+)\. (.+)$/gm, '<li style="margin:2px 0;padding-left:4px;"><span style="color:#a5b4fc;font-weight:700;">$1.</span> $2</li>')
+        // Tablo (basit)
+        .replace(/\| (.+?) \|/g, (m, p) => `<span style="display:inline-block;padding:2px 8px;background:rgba(255,255,255,0.05);border-radius:4px;margin:1px;">${p}</span>`)
+        // Satır sonu
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+}
+
+/** HTML kaçış */
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+function escapeAttr(text) {
+    return String(text).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+

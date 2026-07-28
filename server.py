@@ -917,57 +917,192 @@ def ai_route_recommend():
     })
 
 @app.route("/api/ai-chat", methods=["POST", "OPTIONS"])
-def ai_chat_api():
+def ai_chat():
+    """AI asistan chat endpoint'i - Gaziantep ulaşım sorularını yanıtlar."""
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
 
     data = request.json or {}
-    message = str(data.get("message", "")).strip()
-    msg_norm = fix_mojibake(message).lower()
+    user_message = str(data.get("message", "")).strip().lower()
+    history = data.get("history", [])
 
-    if not message:
-        return jsonify({"success": True, "response": "Lütfen sormak istediğiniz bir soruyu veya durağı yazın."})
+    # Türkçe karakter normalizasyonu
+    def tr_norm(text):
+        replacements = {
+            'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i̇': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+            'Ç': 'c', 'Ğ': 'g', 'I': 'i', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u'
+        }
+        for k, v in replacements.items():
+            text = text.replace(k, v)
+        return text.lower()
 
-    if any(kw in msg_norm for kw in ["karataş", "karatas", "üniversite", "univer", "otogar", "gatem", "meydan", "adliye", "binevler", "ibrahimli"]):
-        if "karataş" in msg_norm or "karatas" in msg_norm:
-            if "üniversite" in msg_norm or "univer" in msg_norm:
-                reply = "📍 **Karataş ➔ GAÜN Üniversitesi Güzergahı:**\n\n- **Mesafe:** ~5.8 km\n- 🚊 **Tramvay (T1 Hattı):** Karataş 1. Bölge durağından T1 tramvayına binerek **~14 dakikada** aktarmasız GAÜN durağına ulaşabilirsiniz.\n- 🚌 **Otobüs:** B02 ve B25 hatları kullanılabilir (~20-25 dk).\n- 🌿 **CO2 Tasarrufu:** Tramvay seçimi ile %85 daha az karbon emisyonu sağlanır."
-            elif "otogar" in msg_norm:
-                reply = "📍 **Karataş ➔ Otogar Güzergahı:**\n\n- **Mesafe:** ~9.4 km\n- 🚌 **Otobüs:** B08 ve B10 hatları ile **~26-30 dakikada** ulaşım sağlayabilirsiniz.\n- 🚊 **Tramvay:** T1 ile Gar durağına gidip oradan banliyö/otobüs aktarması yapılabilir."
-            else:
-                reply = "📍 **Karataş Ulaşım Bilgisi:**\nKarataş bölgesine T1 Tramvay hattı ve B08, B10, B25 otobüs hatları ile erişebilirsiniz. Karataş durağından Demokrasi Meydanı ~5.4 km sürmektedir."
-        elif "adliye" in msg_norm or "ibrahimli" in msg_norm:
-            reply = "📍 **Adliye & İbrahimli Bölgesi Ulaşımı:**\n\n- 🚊 **Tramvay (T2 / T3 Hatları):** Adliye - Gar ve Adliye - Burç Kavşağı tramvay hatları İbrahimli Merkez, Duisburg ve Olimpik Havuz duraklarından geçmektedir.\n- **Seyahat Süresi:** Adliye - Gar arası ortalama **18 dakikadır**."
-        elif "gatem" in msg_norm:
-            reply = "📍 **GATEM Sanayi Bölgesi Ulaşımı:**\n\n- 🚌 **Otobüs:** 1 nolu GATEM Kunduracılar Sitesi durağı B01 ve B29 hatları tarafından servis edilmektedir.\n- GATEM - Demokrasi Meydanı arası yaklaşık 7.2 km olup otobüsle seyahat süresi ~22 dakikadır."
-        else:
-            reply = "📍 **Güzergah & Mesafe Analizi:**\nSeçilen konumlar arası ulaşım için **T1/T2/T3 Tramvay hatları** trafiğe takılmadığı için otobüslere kıyasla ortalama **%35 daha hızlıdır**."
+    msg = tr_norm(user_message)
 
-    elif any(kw in msg_norm for kw in ["t1", "t2", "t3", "gr01", "tramvay", "gaziray", "hatlar", "duraklar"]):
-        if "t1" in msg_norm:
-            reply = "🚊 **T1 Tramvay Hattı (İbn-i Sina ➔ Gar):**\n\n- **Ana Duraklar:** İbn-i Sina, Akkent, GAÜN Üniversitesi, Binevler, Masal Parkı, 25 Aralık Dev. Hastanesi, Gazi Muhtar Paşa, 15 Temmuz Demokrasi Meydanı, Gar.\n- **Sefer Sıklığı:** Yoğun saatlerde 6 dakikada bir çalışır."
-        elif "t2" in msg_norm:
-            reply = "🚊 **T2 Tramvay Hattı (Adliye ➔ Gar):**\n\n- **Ana Duraklar:** Adliye, Kolej Vakfı, Güvenevler, Duisburg, İbrahimli Merkez, Masal Parkı, Demokrasi Meydanı, Gar."
-        elif "t3" in msg_norm:
-            reply = "🚊 **T3 Tramvay Hattı (Adliye ➔ Burç Kavşağı):**\n\n- **Ana Duraklar:** Adliye, İbrahimli, Binevler, Tıp Fakültesi, GAÜN Üniversitesi, Burç Kavşağı."
-        elif "gr01" in msg_norm or "gaziray" in msg_norm:
-            reply = "🚆 **GR01 Gaziray Banliyö Hattı (Başpınar ➔ Taşlıca):**\n\n- **Duraklar:** Başpınar, OSB, Oduncular, Seyrantepe, Otogar, Gar, Göllüce, Taşlıca.\n- **Özellik:** Şehir içi yüksek hızlı elektrikli banliyö tren hattıdır."
-        else:
-            reply = "🚌 **Gaziantep Ulaşım Hatları:**\nGaziantep'te 3 adet Elektrikli Tramvay hattı (T1, T2, T3), 1 adet Gaziray Banliyö hattı (GR01) ve 160+ Belediye otobüs hattı (B01-B200) aktif hizmet vermektedir."
+    # ---- CEVAP MANTIK AĞACI ----
+    reply = ""
+    suggestions = []
 
-    elif any(kw in msg_norm for kw in ["gazibis", "bisiklet", "kirala", "kiralama", "istasyon"]):
-        reply = "🚲 **GaziBis Akıllı Bisiklet Kiralama Rehberi:**\n\n1. Web uygulamamızdaki **GaziBis Kiralama & Randevu** sekmesine girin veya **'+ Bisiklet Kirala'** butonuna tıklayın.\n2. Bisikleti alacağınız ve bırakacağınız istasyonları seçin.\n3. Tarih ve saat girerek randevunuzu oluşturun.\n- **Canlı Durum:** Masal Parkı istasyonunda 12 boş bisiklet mevcuttur."
+    # Selamlama
+    if any(w in msg for w in ["merhaba", "selam", "hey", "naber", "iyi gunler", "iyi aksamlar", "nasılsın", "nasilsin", "nasilsiniz"]):
+        reply = "Merhaba! 👋 Ben **DATransport AI Asistanı**yım. Gaziantep'te ulaşımla ilgili aklınıza takılan her şeyi sorabilirsiniz!\n\n🚌 Hat sorguları, durak bilgileri, CO2 tasarrufu, GaziBis kiralama veya otopark hakkında yardımcı olabilirim."
+        suggestions = ["Hangi hattı kullansam?", "CO2 tasarrufu nasıl hesaplanır?", "GaziBis nedir?"]
 
-    elif any(kw in msg_norm for kw in ["otopark", "park", "plaka", "rezervasyon", "araç"]):
-        reply = "🅿️ **Akıllı Otopark Doluluk & Rezervasyon:**\n\n1. **Akıllı Otopark** sekmesinden veya **'+ Otopark Yeri Rezerve Et'** butonundan otoparkınızı seçin.\n2. Aracınızın plakasını (Örn: `27 NB 2005`) ve park saatlerinizi girin.\n3. Otopark yeriniz anında adınıza ayrılır.\n- **Canlı Bilgi:** Sanko Park Katlı Otoparkında 342 boş yer bulunmaktadır."
+    # Rota / Hat / Güzergah soruları
+    elif any(w in msg for w in ["hat", "guzergah", "rota", "hangi hat", "hangi otobus", "b01", "b02", "t1", "t2", "t3", "tramvay"]):
+        reply = "🗺️ **Gaziantep Toplu Ulaşım Hatları:**\n\n" \
+                "• **T1 / T2 / T3** — Tramvay hatları (en hızlı, trafikten bağımsız)\n" \
+                "• **B01** — Gazikent ↔ Ensar Sitesi\n" \
+                "• **B02** — Şehitkamil ↔ Karataş\n" \
+                "• **18M EV** — Elektrikli körüklü otobüs (sıfır emisyon)\n\n" \
+                "📌 Harita sekmesinden herhangi bir hata tıklayarak canlı durak listesini ve sefer saatlerini görebilirsiniz."
+        suggestions = ["Tramvay kaç dakikada gider?", "CO2 hesapla", "Otopark nerede?"]
 
-    elif any(kw in msg_norm for kw in ["co2", "karbon", "emisyon", "çevre", "yeşil", "ağaç"]):
-        reply = "🌿 **Çevre & Karbon Emisyon Bilgisi:**\n\n- Gaziantep toplu taşıma filosu günlük ortalama **12.5 Ton CO2 tasarrufu** sağlamaktadır.\n- Elektrikli tramvay ve %100 Elektrikli otobüsler **0 g/km** karbon emisyonu ile A++ Eco Puanına sahiptir."
+    # Durak / Konum soruları
+    elif any(w in msg for w in ["durak", "nerede", "nereye", "kalkis", "varis", "karatas", "gazikent", "gatem", "demokrasi", "valilik"]):
+        # Durak sayısını veri setinden çek
+        total_stops = len(df_stops) if df_stops is not None else 1500
+        reply = f"📍 **Durak Bilgisi:**\n\n" \
+                f"Sistemde toplam **{total_stops}** Gaziantep toplu ulaşım durağı kayıtlıdır.\n\n" \
+                "🔍 Belirli bir durak aramak için:\n" \
+                "1. Harita sekmesine gidin\n" \
+                "2. **CO2 Karşılaştırıcı** aracını açın\n" \
+                "3. Arama kutusuna durak adını yazın (Türkçe karaktersiz de çalışır!)\n\n" \
+                "💡 Örnek: *'Karataş'*, *'Demokrasi Meydan'*, *'Gazikent'* yazabilirsiniz."
+        suggestions = ["Karataş'a hangi hat gider?", "T1 tramvayı nereye kadar gider?", "CO2 hesapla"]
 
+    # CO2 / Çevre / Emisyon soruları
+    elif any(w in msg for w in ["co2", "emisyon", "karbondioksit", "cevre", "yesil", "agac", "tasarruf", "kirlilik", "hava"]):
+        reply = "🌿 **CO2 & Çevre Tasarrufu:**\n\n" \
+                "Gaziantep'te toplu taşımayla seyahat ederek büyük çevresel tasarruf sağlarsınız:\n\n" \
+                "| Araç | CO2 / km |\n|------|----------|\n" \
+                "| 🚃 Tramvay | ~0.04 kg |\n" \
+                "| ⚡ EV Otobüs | 0 kg |\n" \
+                "| 🚌 Belediye Otobüsü | ~0.28 kg |\n" \
+                "| 🚗 Bireysel Araç | ~0.22 kg |\n\n" \
+                "📊 **CO2 Karşılaştırma Raporu** sekmesinden iki durak arasındaki farkı hesaplayabilirsiniz!"
+        suggestions = ["CO2 nasıl hesaplanır?", "Tramvay vs Otobüs karşılaştır", "GaziBis nedir?"]
+
+    # Süre / Zaman / Kaç dakika soruları
+    elif any(w in msg for w in ["kac dakika", "ne kadar", "sure", "zaman", "hiz", "hizli", "yavas", "trafik"]):
+        reply = "⏱️ **Tahmini Seyahat Süreleri** (6 km örnek mesafe için):\n\n" \
+                "• 🚃 **Tramvay (T1/T2/T3):** ~15 dk *(trafik etkilemez)*\n" \
+                "• ⚡ **EV Otobüs:** ~17 dk\n" \
+                "• 🚌 **Belediye Otobüsü:** Trafiğe göre 20–35 dk\n" \
+                "• 🚗 **Bireysel Araç:** Pik saatte 30–50 dk\n\n" \
+                "🔴 **Pik Saatler:** 07:00-09:00 ve 17:00-19:00 arası karayolu trafiği en yoğun dönemdir.\n" \
+                "✅ Bu saatlerde **tramvay tercih etmeniz önerilir.**"
+        suggestions = ["Hangi hat en hızlı?", "Pik saatte ne kullanmalıyım?", "CO2 hesapla"]
+
+    # GaziBis soruları
+    elif any(w in msg for w in ["gazibis", "bisiklet", "kiral", "bike", "pedal", "gazi bis"]):
+        reply = "🚲 **GaziBis Akıllı Bisiklet Sistemi:**\n\n" \
+                "Gaziantep'in paylaşımlı akıllı bisiklet sistemidir.\n\n" \
+                "📌 **Nasıl Çalışır?**\n" \
+                "• Şehir genelinde istasyonlardan bisiklet kiralayabilirsiniz\n" \
+                "• Kısa mesafelerde (1-4 km) en hızlı ve sıfır emisyonlu ulaşım\n" \
+                "• İstasyon noktaları haritada 🟢 yeşil nokta olarak işaretlidir\n\n" \
+                "🗺️ Harita sekmesinde **GaziBis İstasyonları** butonuna tıklayarak tüm noktaları görebilirsiniz."
+        suggestions = ["GaziBis ücreti ne kadar?", "En yakın istasyon nerede?", "CO2 tasarrufu?"]
+
+    # Otopark soruları
+    elif any(w in msg for w in ["otopark", "park", "araç park", "ucretli", "ucretsiz", "akilli park"]):
+        reply = "🅿️ **Otopark Bilgileri:**\n\n" \
+                "DATransport üzerinden Gaziantep'teki akıllı otoparkları görüntüleyebilir ve rezervasyon yapabilirsiniz.\n\n" \
+                "• 🔵 **Ücretli Otoparklar** — Şehir merkezinde\n" \
+                "• 🟢 **Ücretsiz Park Alanları** — Çevre ilçelerde\n" \
+                "• ♿ **Engelli Park Yerleri** — Tüm otoparklarda ayrılmış\n\n" \
+                "📋 **Rezervasyon için:** Harita → Otopark Göster → Rezervasyon Yap butonunu kullanın."
+        suggestions = ["Otopark rezervasyonu nasıl yapılır?", "Şehir merkezinde otopark?", "GaziBis alternatifleri?"]
+
+    # Erişilebilirlik soruları
+    elif any(w in msg for w in ["engelli", "tekerlekli", "erisim", "erisebilir", "eba", "goreme", "isitme", "kör"]):
+        reply = "♿ **Erişilebilirlik Bilgileri:**\n\n" \
+                "Gaziantep toplu ulaşımı engelli vatandaşlar için kapsamlı destekler sunmaktadır:\n\n" \
+                "• Tüm tramvay durakları **alçak platformlu** ve **tekerlekli sandalye erişimli**\n" \
+                "• Körüklü otobüslerde **rampa sistemi** mevcut\n" \
+                "• Kilit duraklarda **sesli yönlendirme** sistemi aktif\n\n" \
+                "🗺️ Harita sekmesindeki **Erişilebilirlik Hizmetleri** katmanını açarak tüm erişilebilir noktaları görebilirsiniz."
+        suggestions = ["Erişilebilir duraklar nerede?", "Tramvay erişilebilir mi?"]
+
+    # Ücret / Tarife soruları
+    elif any(w in msg for w in ["ucret", "fiyat", "bilet", "kart", "gazicard", "ne kadar tutar", "kaç tl", "para"]):
+        reply = "💳 **Ücret & Tarife Bilgileri:**\n\n" \
+                "• **GaziCard** ile tüm toplu taşıma araçlarında geçerli entegre ödeme\n" \
+                "• Aktarmalı yolculuklarda **indirimli tarife** uygulanır\n" \
+                "• Öğrenci, 65 yaş üstü ve engelli vatandaşlar **ücretsiz** ya da **indirimli** yararlanır\n\n" \
+                "📌 Güncel tarife bilgisi için **Gaziulaş** resmi web sitesini ziyaret edebilirsiniz."
+        suggestions = ["GaziCard nedir?", "Öğrenci indirimi var mı?", "Aktarma ücreti?"]
+
+    # Yeni durak talebi
+    elif any(w in msg for w in ["yeni durak", "durak ekle", "talep", "istek", "sikayet", "öneri", "oneri"]):
+        reply = "📝 **Yeni Durak Talebi Oluşturma:**\n\n" \
+                "Mahallenizde eksik olduğunu düşündüğünüz bir durak için kolayca talep oluşturabilirsiniz!\n\n" \
+                "📌 **Adımlar:**\n" \
+                "1. **Güzergah & Hat** sekmesine gidin\n" \
+                "2. Sayfanın alt kısmındaki **'Yeni Durak Talebi Oluştur'** butonuna tıklayın\n" \
+                "3. Hat kodunu seçin ve önerilen durak bilgilerini girin\n" \
+                "4. Harita üzerinden konumu pinleyin\n" \
+                "5. **Gönder** butonuna tıklayın — talebiniz sisteme kaydedilir!\n\n" \
+                "📊 Tüm talepler **Veri & AI** sekmesindeki kayıt defterinde görüntülenebilir ve CSV olarak indirilebilir."
+        suggestions = ["Talep durumunu nasıl takip ederim?", "CO2 hesapla", "GaziBis nedir?"]
+
+    # AI / Yapay Zeka sorusu
+    elif any(w in msg for w in ["yapay zeka", "ai", "akilli", "makine ogrenmesi", "ml", "tahmin", "model"]):
+        reply = "🤖 **DATransport AI Sistemi:**\n\n" \
+                "Bu platform, Gaziantep ulaşım verilerini analiz eden yapay zeka modelleri kullanmaktadır:\n\n" \
+                "• **Rota Öneri Motoru** — Mesafe, saat ve trafik yoğunluğuna göre en iyi ulaşım aracını önerir\n" \
+                "• **CO2 Hesaplama Modeli** — GTFS veri setiyle beslenmiş gerçek durak mesafelerine dayalı\n" \
+                "• **Makine Öğrenimi Paneli** — Veri & AI sekmesinde model başarım metrikleri (R², MAE) görülebilir\n\n" \
+                "📊 **Veri & AI** sekmesine giderek tüm CSV veri setlerini indirebilir ve model sonuçlarını inceleyebilirsiniz."
+        suggestions = ["Rota öner", "CO2 hesapla", "Veri setlerini indir"]
+
+    # Uygulama / Nasıl kullanırım sorusu
+    elif any(w in msg for w in ["nasil", "nasil kullan", "uygulama", "ne yapabilir", "ozellik", "fonksiyon", "sekme", "tab"]):
+        reply = "📱 **DATransport Uygulama Rehberi:**\n\n" \
+                "Uygulamada **7 ana sekme** bulunmaktadır:\n\n" \
+                "1. 🗺️ **Harita & Canlı Takip** — Duraklar, hatlar, GaziBis, otopark\n" \
+                "2. 🚌 **Güzergah & Hat** — Tüm hatları listele, durak ara, sefer saatlerini gör\n" \
+                "3. 🚲 **GaziBis Kiralama** — Elektrikli bisiklet kiralama & iade\n" \
+                "4. 🅿️ **Akıllı Otopark** — Otopark görüntüle & rezerve et\n" \
+                "5. ♿ **Erişilebilirlik** — Engelli dostu duraklar ve hizmetler\n" \
+                "6. 📊 **CO2 Karşılaştırıcı** — İki durak arası emisyon analizi\n" \
+                "7. 🤖 **Veri & AI** — Veri setleri, ML paneli, CSV indirmeler"
+        suggestions = ["CO2 hesapla", "GaziBis nedir?", "Yeni durak talebi oluştur"]
+
+    # Teşekkür
+    elif any(w in msg for w in ["tesekkur", "sagol", "sagolun", "eyvallah", "super", "mukemmel", "harika", "tamam", "anladim"]):
+        reply = "🙏 Rica ederim! Başka bir konuda yardımcı olabilir miyim?\n\n" \
+                "Gaziantep'te her seyahatinizde **DATransport AI Asistanı** yanınızda! 🚃✨"
+        suggestions = ["Yeni soru sor", "CO2 hesapla", "Hat sorgula"]
+
+    # Bilinmeyen / Genel soru
     else:
-        reply = f"🤖 **DATransport AI Asistanı:**\n\nSorunuzu aldım: *\"{message}\"*\n\nSize şu konularda yardımcı olabilirim:\n- 📍 **Güzergah & Süre:** \"Karataş'tan Üniversite'ye kaç dakikada giderim?\"\n- 🚊 **Tramvay & Otobüs:** \"T1 veya T2 hattı hangi duraklardan geçer?\"\n- 🚲 **GaziBis:** \"Bisiklet kiralama randevusu nasıl alınır?\"\n- 🅿️ **Otopark:** \"Otopark doluluk oranları ve park yeri ayırma?\"\n- 🌿 **CO2:** \"Hangi ulaşım aracı en çevreci?\""
+        # Anahtar kelime bulunamadıysa yönlendirme yap
+        reply = "🤔 Sorunuzu tam olarak anlayamadım. Gaziantep ulaşımı hakkında şu konularda yardımcı olabilirim:\n\n" \
+                "• 🚌 **Hat & güzergah bilgileri** — 'B01 hattı nereye gider?'\n" \
+                "• 📍 **Durak sorgulama** — 'Karataş durağı nerede?'\n" \
+                "• 🌿 **CO2 tasarrufu** — 'Tramvay mı otobüs mü daha çevreci?'\n" \
+                "• ⏱️ **Seyahat süresi** — 'Kaç dakika sürer?'\n" \
+                "• 🚲 **GaziBis** — 'Bisiklet kiralama nasıl?'\n" \
+                "• 🅿️ **Otopark** — 'Park yeri var mı?'\n\n" \
+                "Lütfen sorunuzu yeniden yazabilir misiniz?"
+        suggestions = ["Hangi hattı kullansam?", "CO2 hesapla", "GaziBis nedir?", "Otopark nerede?"]
 
-    return jsonify({"success": True, "response": reply})
+    # Durak istatistiği ekle
+    total_stops = len(df_stops) if df_stops is not None else 1500
+    total_routes = len(df_routes) if df_routes is not None else 85
+
+    return jsonify({
+        "success": True,
+        "reply": reply,
+        "suggestions": suggestions,
+        "meta": {
+            "total_stops": total_stops,
+            "total_routes": total_routes,
+            "version": "DATransport AI v2.1"
+        }
+    })
+
 
 if __name__ == "__main__":
     print("Starting Flask Backend Server at http://localhost:5000")
