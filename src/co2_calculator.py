@@ -46,6 +46,8 @@ GAZIULAS_FLEET_SPECS = {
     }
 }
 
+VEHICLE_EMISSION_FACTORS = GAZIULAS_FLEET_SPECS
+
 def calculate_haversine_distance(lat1, lon1, lat2, lon2):
     """Calculate Great Circle distance in kilometers between two lat/lng coordinates."""
     R = 6371.0
@@ -60,7 +62,7 @@ def calculate_haversine_distance(lat1, lon1, lat2, lon2):
 def Math_atan2_sqrt(a):
     return math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-def calculate_co2_emission(mode="Otobüs", bus_model="MAN Lion's City (Solo)", distance_km=5.0, use_ml_model=True):
+def calculate_co2_emission(mode="Otobüs", bus_model="MAN Lion's City (Solo)", distance_km=5.0, use_ml_model=True, fuel_type=None, **kwargs):
     """
     Calculate CO2 emissions based on Gaziulaş fleet specs and distance.
     """
@@ -90,6 +92,13 @@ def calculate_co2_emission(mode="Otobüs", bus_model="MAN Lion's City (Solo)", d
     # Trees required (1 mature tree absorbs ~60g CO2 per day)
     trees_needed = round(adjusted_total_g / 60.0, 1)
     
+    passenger_cnt = int(kwargs.get("passenger_count", 1)) if kwargs.get("passenger_count") else 1
+    passenger_cnt = max(1, passenger_cnt)
+    passenger_co2_g = round(adjusted_total_g / passenger_cnt, 1)
+
+    car_co2_g = 220.0 * dist * traffic_factor
+    co2_saved_pct = round(max(0, (car_co2_g - adjusted_total_g) / max(1.0, car_co2_g) * 100), 1)
+
     return {
         "mode": mode,
         "bus_model": bus_model,
@@ -97,6 +106,10 @@ def calculate_co2_emission(mode="Otobüs", bus_model="MAN Lion's City (Solo)", d
         "co2_g_per_km": round(co2_g_per_km, 1),
         "total_vehicle_co2_g": round(adjusted_total_g, 1),
         "total_vehicle_co2_kg": round(adjusted_total_g / 1000.0, 3),
+        "passenger_co2_g": passenger_co2_g,
+        "passenger_co2_kg": round(passenger_co2_g / 1000.0, 3),
+        "passenger_count": passenger_cnt,
+        "co2_saved_percent": co2_saved_pct,
         "traffic_pct": traffic_pct,
         "traffic_increase_pct": round((traffic_factor - 1.0) * 100, 1),
         "trees_needed_daily": trees_needed

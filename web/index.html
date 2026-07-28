@@ -68,6 +68,12 @@
                                 <input type="text" id="route-search-input" class="search-input" placeholder="Hat veya Raylı Sistem ara (T1, T2, GR01, B01)..." oninput="filterRouteList()">
                             </div>
                         </div>
+                        <div style="padding: 6px 12px; background: #f0fdf4; border-bottom: 1px solid #bbf7d0; display: flex; align-items: center; justify-content: space-between;">
+                            <label for="accessibility-filter-toggle" style="font-size: 0.76rem; font-weight: 800; color: #15803d; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none;">
+                                <i class="fa-solid fa-wheelchair" style="font-size: 0.9rem;"></i> Engelsiz Ulaşım Filtresi
+                            </label>
+                            <input type="checkbox" id="accessibility-filter-toggle" onchange="filterRouteList()" style="width: 16px; height: 16px; accent-color: #16a34a; cursor: pointer;">
+                        </div>
                         <div class="route-list-container" id="route-items-box"></div>
                     </div>
 
@@ -114,6 +120,7 @@
                         <button onclick="selectRoute('GR01')" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: #0f172a; background: linear-gradient(135deg, #facc15, #eab308); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(234, 179, 8, 0.35);"><i class="fa-solid fa-train" style="margin-right: 4px;"></i> GR01 Gaziray</button>
                         <button onclick="toggleGaziBisMapLayer()" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(139, 92, 246, 0.35);"><i class="fa-solid fa-bicycle" style="margin-right: 4px;"></i> GaziBis</button>
                         <button onclick="toggleParkingMapLayer()" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #0284c7, #0369a1); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);"><i class="fa-solid fa-square-parking" style="margin-right: 4px;"></i> Otoparklar</button>
+                        <button onclick="toggleAccessibilityMapLayer()" id="btn-accessibility-layer" style="cursor: pointer; padding: 8px 14px; font-size: 0.82rem; font-weight: 800; color: white; background: linear-gradient(135deg, #0d9488, #0f766e); border: none; border-radius: 8px; box-shadow: 0 3px 10px rgba(13, 148, 136, 0.35);"><i class="fa-solid fa-wheelchair" style="margin-right: 4px;"></i> Engelsiz Katmanı</button>
                         
                         <div style="width: 1px; height: 24px; background: #cbd5e1; margin: 0 4px;"></div>
                         
@@ -759,6 +766,16 @@
                         </div>
                         <button onclick="downloadParkingCSV()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                             <i class="fa-solid fa-download"></i> Otopark Verisini İndir (CSV)
+                        </button>
+                    </div>
+
+                    <div style="background: white; border: 1px solid #99f6e4; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-weight: 800; color: #0f766e; font-size: 0.92rem; margin-bottom: 4px;">7. Engelsiz Ulaşım & Erişilebilirlik Verisi</div>
+                            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 10px;">Engelli Hizmet Noktaları, Şarj İstasyonları, Rampa/Asansör</div>
+                        </div>
+                        <button onclick="downloadAccessibilityCSV()" style="background: linear-gradient(135deg, #0d9488, #0f766e); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fa-solid fa-download"></i> Engelsiz Ulaşım Verisini İndir (CSV)
                         </button>
                     </div>
                 </div>
