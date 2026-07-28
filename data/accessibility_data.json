@@ -11,7 +11,7 @@
     "has_elevator": true,
     "tactile_paving": true,
     "services": "Akülü Sandalye Şarj Ünitesi, Medikal Bakım, İşitme ve Görme Engelli Destek Servisi",
-    "status": "Aktif / Hizmette 🟢"
+    "status": "Aktif / Hizmette"
   },
   {
     "id": "HZT02",
@@ -25,7 +25,7 @@
     "has_elevator": true,
     "tactile_paving": true,
     "services": "Hızlı Şarj Ünitesi (24V DC), Asansörlü Biniş Peronu, Engelli Otoparkı",
-    "status": "Aktif / Hizmette 🟢"
+    "status": "Aktif / Hizmette"
   },
   {
     "id": "HZT03",
@@ -39,7 +39,7 @@
     "has_elevator": false,
     "tactile_paving": true,
     "services": "Sesli Sinyalizasyonlu Yaya Geçidi, Görme Engelli Hissedilebilir Sarı Kılavuz Yolu, 0cm Hemzemin Biniş",
-    "status": "Aktif / Hizmette 🟢"
+    "status": "Aktif / Hizmette"
   },
   {
     "id": "HZT04",
@@ -53,7 +53,7 @@
     "has_elevator": true,
     "tactile_paving": true,
     "services": "Panoramik Asansörler, Dokunsal Harita, Akülü Sandalye Şarj Ünitesi, Engelsiz Tuvalet",
-    "status": "Aktif / Hizmette 🟢"
+    "status": "Aktif / Hizmette"
   },
   {
     "id": "HZT05",
@@ -67,7 +67,7 @@
     "has_elevator": true,
     "tactile_paving": true,
     "services": "Alçak Tabanlı Yanaşma Peronu, Akülü Sandalye Hızlı Şarj Ünitesi, Tekerlekli Sandalye Rampa Eğimi %4",
-    "status": "Aktif / Hizmette 🟢"
+    "status": "Aktif / Hizmette"
   },
   {
     "id": "HZT06",
@@ -81,7 +81,7 @@
     "has_elevator": true,
     "tactile_paving": true,
     "services": "0cm Hemzemin Peron, Tekerlekli Sandalye Biniş Rampası, Sesli Anons Sistemi",
-    "status": "Aktif / Hizmette 🟢"
+    "status": "Aktif / Hizmette"
   },
   {
     "id": "HZT07",
@@ -95,7 +95,7 @@
     "has_elevator": true,
     "tactile_paving": true,
     "services": "Engelsiz Ulaşım Kartı Başvuru & Vizeleme, Rehberlik ve Yönlendirme",
-    "status": "Aktif / Hizmette 🟢"
+    "status": "Aktif / Hizmette"
   },
   {
     "id": "HZT08",
@@ -109,6 +109,6 @@
     "has_elevator": false,
     "tactile_paving": true,
     "services": "Güneş Enerjili Akülü Sandalye Şarj Ünitesi, Erişilebilir Rampa ve Biniş Alanı",
-    "status": "Aktif / Hizmette 🟢"
+    "status": "Aktif / Hizmette"
   }
 ]
