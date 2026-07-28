@@ -421,7 +421,6 @@ function renderVerticalAccordionMenu(filterQuery = '') {
     container.innerHTML = '';
 
     const query = filterQuery.toLowerCase().trim();
-    const isAccessOnly = document.getElementById('accessibility-filter-toggle')?.checked || false;
 
     const mainTramCodes = ['T1', 'T2', 'T3'];
     const busRoutes = allRoutes.filter(r => !mainTramCodes.includes(r.route_code.toUpperCase()) && !r.route_code.toUpperCase().startsWith('TA') && !r.route_code.toUpperCase().startsWith('GR'));
@@ -446,12 +445,10 @@ function renderVerticalAccordionMenu(filterQuery = '') {
                     const item = document.createElement('div');
                     item.className = 'route-list-item';
                     item.onclick = (e) => { e.stopPropagation(); selectRoute(r.route_code); };
-                    const accessBadge = '<span style="font-size: 0.68rem; background: #d1fae5; color: #047857; padding: 2px 6px; border-radius: 6px; font-weight: 800;"><i class="fa-solid fa-wheelchair"></i> %100 Uyumlu</span>';
                     item.innerHTML = `
                         <div class="route-code-badge">${r.route_code}</div>
-                        <div class="route-name-text" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:4px;">
+                        <div class="route-name-text">
                             <span>${r.route_name}</span>
-                            ${isAccessOnly ? accessBadge : ''}
                         </div>
                     `;
                     bodyEl.appendChild(item);
