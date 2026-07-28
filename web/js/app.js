@@ -409,6 +409,7 @@ function populateRequestRouteSelect(routes) {
 let expandedCategories = {
     'bus': false,
     'tram': false,
+    'tram_transfer': false,
     'gaziray': false,
     'gazibis': false,
     'parking': false,
@@ -461,7 +462,7 @@ function renderVerticalAccordionMenu(filterQuery = '') {
             icon: 'fa-train-subway',
             color: '#dc2626',
             bgColor: '#fef2f2',
-            count: (mainTramRoutes.length || 3) + (tramTransferRoutes.length > 0 ? ` (+${tramTransferRoutes.length} Aktarma)` : ''),
+            count: mainTramRoutes.length || 3,
             renderContent: (bodyEl) => {
                 const mainList = mainTramRoutes.length > 0 ? mainTramRoutes : [
                     { route_code: 'T1', route_name: 'T1 - İbni Sina-Gar (Ana Tramvay Hattı)' },
@@ -474,34 +475,41 @@ function renderVerticalAccordionMenu(filterQuery = '') {
                     item.onclick = (e) => { e.stopPropagation(); selectRoute(r.route_code); };
                     item.innerHTML = `
                         <div class="route-code-badge red-badge">${r.route_code}</div>
-                        <div class="route-name-text" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                        <div class="route-name-text">
                             <span>${r.route_name}</span>
-                            <span style="font-size: 0.68rem; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 6px; font-weight: 800; border: 1.5px solid #fca5a5; white-space: nowrap;">Ana Raylı Hat</span>
                         </div>
                     `;
                     bodyEl.appendChild(item);
                 });
-
-                if (tramTransferRoutes.length > 0) {
-                    const divider = document.createElement('div');
-                    divider.style.cssText = 'padding: 6px 14px; font-size: 0.75rem; font-weight: 800; color: #64748b; background: #f1f5f9; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 6px;';
-                    divider.innerHTML = '<i class="fa-solid fa-arrow-right-arrow-left" style="color: #f97316;"></i> Tramvay Besleme & Aktarma Hatları';
-                    bodyEl.appendChild(divider);
-
-                    tramTransferRoutes.forEach(r => {
-                        const item = document.createElement('div');
-                        item.className = 'route-list-item';
-                        item.onclick = (e) => { e.stopPropagation(); selectRoute(r.route_code); };
-                        item.innerHTML = `
-                            <div class="route-code-badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;">${r.route_code}</div>
-                            <div class="route-name-text" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-                                <span>${r.route_name}</span>
-                                <span style="font-size: 0.68rem; background: #fff7ed; color: #c2410c; padding: 2px 6px; border-radius: 6px; font-weight: 800; border: 1px solid #ffedd5; white-space: nowrap;">Aktarma Hattı</span>
-                            </div>
-                        `;
-                        bodyEl.appendChild(item);
-                    });
-                }
+            }
+        },
+        {
+            id: 'tram_transfer',
+            title: 'Tramvay Aktarma Hatları',
+            icon: 'fa-arrow-right-arrow-left',
+            color: '#ea580c',
+            bgColor: '#fff7ed',
+            count: tramTransferRoutes.length || 5,
+            renderContent: (bodyEl) => {
+                const transferList = tramTransferRoutes.length > 0 ? tramTransferRoutes : [
+                    { route_code: 'TA1', route_name: 'TA1 - Gaün-Güneyşehir' },
+                    { route_code: 'TA3', route_name: 'TA3 - Gibte-Gaün' },
+                    { route_code: 'TA502', route_name: 'TA502 - Adliye-Gar' },
+                    { route_code: 'TA503', route_name: 'TA503 - Burçç-Adliye' },
+                    { route_code: 'TA6', route_name: 'TA6 - Karataş2-Tramvay Aktarma' }
+                ];
+                transferList.forEach(r => {
+                    const item = document.createElement('div');
+                    item.className = 'route-list-item';
+                    item.onclick = (e) => { e.stopPropagation(); selectRoute(r.route_code); };
+                    item.innerHTML = `
+                        <div class="route-code-badge" style="background:#ffedd5; color:#c2410c; border:1px solid #fed7aa;">${r.route_code}</div>
+                        <div class="route-name-text">
+                            <span>${r.route_name}</span>
+                        </div>
+                    `;
+                    bodyEl.appendChild(item);
+                });
             }
         },
         {
