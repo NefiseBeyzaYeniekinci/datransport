@@ -407,8 +407,8 @@ function populateRequestRouteSelect(routes) {
 }
 
 let expandedCategories = {
-    'bus': true,
-    'tram': true,
+    'bus': false,
+    'tram': false,
     'gaziray': false,
     'gazibis': false,
     'parking': false,
