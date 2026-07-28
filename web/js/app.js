@@ -1630,10 +1630,19 @@ function closeCustomMessageBox() {
 
 function trNormalize(str) {
     if (!str) return '';
-    return str
-        .replace(/İ/g, 'i').replace(/I/g, 'ı').replace(/Ğ/g, 'ğ')
-        .replace(/Ü/g, 'ü').replace(/Ş/g, 'ş').replace(/Ö/g, 'ö')
-        .replace(/Ç/g, 'ç').toLowerCase();
+    return str.toString()
+        .toLowerCase()
+        .replace(/ç/g, 'c')
+        .replace(/ğ/g, 'g')
+        .replace(/ı/g, 'i')
+        .replace(/i̇/g, 'i')
+        .replace(/ö/g, 'o')
+        .replace(/ş/g, 's')
+        .replace(/ü/g, 'u')
+        .replace(/â|â/g, 'a')
+        .replace(/î|î/g, 'i')
+        .replace(/û|û/g, 'u')
+        .replace(/[^a-z0-9]/g, '');
 }
 
 function filterStopOptions(type) {
@@ -1643,20 +1652,27 @@ function filterStopOptions(type) {
 
     if (!searchInput || !selectEl || !allStops) return;
 
-    const q = trNormalize(searchInput.value.trim());
+    const qRaw = searchInput.value.trim();
+    const qNorm = trNormalize(qRaw);
     selectEl.innerHTML = '';
 
     const filtered = allStops.filter(s => {
-        if (!q) return true;
+        if (!qNorm) return true;
         const nameNorm = trNormalize(s.stop_name || '');
         const idNorm = trNormalize(String(s.stop_id || ''));
-        return nameNorm.includes(q) || idNorm.includes(q);
+        return nameNorm.includes(qNorm) || idNorm.includes(qNorm);
     });
 
-    filtered.forEach(s => {
-        const opt = new Option(`${s.stop_id} - ${s.stop_name}`, s.stop_id);
+    if (filtered.length === 0) {
+        const opt = new Option(`❌ "${qRaw}" için durak bulunamadı`, '');
+        opt.disabled = true;
         selectEl.add(opt);
-    });
+    } else {
+        filtered.forEach(s => {
+            const opt = new Option(`${s.stop_id} - ${s.stop_name}`, s.stop_id);
+            selectEl.add(opt);
+        });
+    }
 
     if (countBadge) {
         countBadge.textContent = `${filtered.length} durak bulundu`;
