@@ -232,9 +232,9 @@
                     <!-- REPORT HEADER -->
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px; margin-bottom: 16px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="background: #0f172a; color: white; font-weight: 800; font-size: 0.85rem; padding: 6px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
-                                <i class="fa-solid fa-chart-line"></i> Güzergah Karşılaştırma Raporu
-                            </div>
+                            <button onclick="downloadCO2ReportCSV()" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white; font-weight: 800; font-size: 0.85rem; padding: 8px 16px; border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(15,23,42,0.25); transition: transform 0.15s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                                <i class="fa-solid fa-file-arrow-down" style="color: #4ade80;"></i> Güzergah Karşılaştırma Raporunu İndir (CSV)
+                            </button>
                         </div>
                         <div style="background: #f1f5f9; color: #0f172a; font-weight: 800; font-size: 0.88rem; padding: 6px 14px; border-radius: 20px;" id="cmp-distance-header">Mesafe: 5.4 km</div>
                     </div>
@@ -766,23 +766,25 @@
 
                 <div class="form-group">
                     <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>1. Başlangıç / Kalkış Durağı:</span>
-                        <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px;" id="lbl-start-count">1 durak bulundu</span>
+                        <span>1. Başlangıç / Kalkış Durağı Ara & Seç:</span>
+                        <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px;" id="lbl-start-count">62 durak bulundu</span>
                     </label>
+                    <input type="text" id="search-start-stop" class="form-input" placeholder="🔍 Durak adı veya durak kodu yazın..." oninput="filterStopOptions('start')" style="margin-bottom: 8px;">
                     <div style="position: relative;">
                         <select id="calc-start-stop" class="form-select" onchange="calculateCO2()"></select>
-                        <button onclick="resetStartStopSelect()" style="position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer;">&times;</button>
+                        <button onclick="resetStartStopSelect()" style="position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer;" title="Aramayı Sıfırla">&times;</button>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>2. Varış Durağı:</span>
-                        <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px;" id="lbl-end-count">2 durak bulundu</span>
+                        <span>2. Varış Durağı Ara & Seç:</span>
+                        <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px;" id="lbl-end-count">62 durak bulundu</span>
                     </label>
+                    <input type="text" id="search-end-stop" class="form-input" placeholder="🔍 Varış durak adı veya durak kodu yazın..." oninput="filterStopOptions('end')" style="margin-bottom: 8px;">
                     <div style="position: relative;">
                         <select id="calc-end-stop" class="form-select" onchange="calculateCO2()"></select>
-                        <button onclick="resetEndStopSelect()" style="position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer;">&times;</button>
+                        <button onclick="resetEndStopSelect()" style="position: absolute; right: 28px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer;" title="Aramayı Sıfırla">&times;</button>
                     </div>
                 </div>
 

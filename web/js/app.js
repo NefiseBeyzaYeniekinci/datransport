@@ -1628,6 +1628,55 @@ function closeCustomMessageBox() {
     document.body.style.overflow = '';
 }
 
+function trNormalize(str) {
+    if (!str) return '';
+    return str
+        .replace(/İ/g, 'i').replace(/I/g, 'ı').replace(/Ğ/g, 'ğ')
+        .replace(/Ü/g, 'ü').replace(/Ş/g, 'ş').replace(/Ö/g, 'ö')
+        .replace(/Ç/g, 'ç').toLowerCase();
+}
+
+function filterStopOptions(type) {
+    const searchInput = document.getElementById(type === 'start' ? 'search-start-stop' : 'search-end-stop');
+    const selectEl = document.getElementById(type === 'start' ? 'calc-start-stop' : 'calc-end-stop');
+    const countBadge = document.getElementById(type === 'start' ? 'lbl-start-count' : 'lbl-end-count');
+
+    if (!searchInput || !selectEl || !allStops) return;
+
+    const q = trNormalize(searchInput.value.trim());
+    selectEl.innerHTML = '';
+
+    const filtered = allStops.filter(s => {
+        if (!q) return true;
+        const nameNorm = trNormalize(s.stop_name || '');
+        const idNorm = trNormalize(String(s.stop_id || ''));
+        return nameNorm.includes(q) || idNorm.includes(q);
+    });
+
+    filtered.forEach(s => {
+        const opt = new Option(`${s.stop_id} - ${s.stop_name}`, s.stop_id);
+        selectEl.add(opt);
+    });
+
+    if (countBadge) {
+        countBadge.textContent = `${filtered.length} durak bulundu`;
+    }
+
+    calculateCO2();
+}
+
+function resetStartStopSelect() {
+    const input = document.getElementById('search-start-stop');
+    if (input) input.value = '';
+    filterStopOptions('start');
+}
+
+function resetEndStopSelect() {
+    const input = document.getElementById('search-end-stop');
+    if (input) input.value = '';
+    filterStopOptions('end');
+}
+
 async function loadStops() {
     try {
         const res = await fetch('/api/stops');
@@ -1647,6 +1696,10 @@ async function loadStops() {
 function populateStopDropdowns(stops) {
     const selectStart = document.getElementById('calc-start-stop');
     const selectEnd = document.getElementById('calc-end-stop');
+    const lblStart = document.getElementById('lbl-start-count');
+    const lblEnd = document.getElementById('lbl-end-count');
+
+    if (!selectStart || !selectEnd) return;
 
     selectStart.innerHTML = '';
     selectEnd.innerHTML = '';
@@ -1659,6 +1712,56 @@ function populateStopDropdowns(stops) {
     });
 
     if (selectEnd.options.length > 5) selectEnd.selectedIndex = 5;
+    if (lblStart) lblStart.textContent = `${stops.length} durak bulundu`;
+    if (lblEnd) lblEnd.textContent = `${stops.length} durak bulundu`;
+}
+
+function downloadCO2ReportCSV() {
+    const startSelect = document.getElementById('calc-start-stop');
+    const endSelect = document.getElementById('calc-end-stop');
+    
+    const startText = startSelect?.options[startSelect.selectedIndex]?.text || '10002 - Demokrasi Meydanı / Valilik';
+    const endText = endSelect?.options[endSelect.selectedIndex]?.text || '10005 - Karataş 1. Bölge Çarşı';
+    const busCo2Text = document.getElementById('cmp-bus-co2')?.textContent || '15.12 kg';
+    const tramCo2Text = document.getElementById('cmp-tram-co2')?.textContent || '2.16 kg';
+    const distText = document.getElementById('cmp-distance-header')?.textContent || 'Mesafe: 5.4 km';
+    const savingText = document.getElementById('cmp-saving-text')?.textContent || '';
+    const trafficText = document.getElementById('txt-traffic-percent')?.textContent || '%38 Akıcı';
+    const trafficFactor = document.getElementById('txt-traffic-factor')?.textContent || '';
+
+    let csv = "Gaziantep Akıllı Ulaşım Güzergah & CO2 Karşılaştırma Analiz Raporu\n";
+    csv += `Rapor Tarihi,"${new Date().toLocaleString('tr-TR')}"\n`;
+    csv += `Kalkış Durağı,"${startText}"\n`;
+    csv += `Varış Durağı,"${endText}"\n`;
+    csv += `Hesaplanan Güzergah Mesafesi,"${distText}"\n`;
+    csv += `Trafik Yoğunluğu,"${trafficText} (${trafficFactor})"\n\n`;
+
+    csv += "Ulaşım Modu,Model / Hat Tipi,Yolcu Kapasitesi,Toplam Sefer CO2 Salınımı (kg),Gram CO2 / km,Tahmini Süre,Çevre Eco Puanı\n";
+    csv += `"Belediye Otobüsü (Körüklü)","MAN Lion's City G (Körüklü)",150 Yolcu,"${busCo2Text}",390 g/km,"~18 dk",C (Orta Emisyon)\n`;
+    csv += `"Belediye Otobüsü (Solo)","MAN Lion's City (Solo)",100 Yolcu,"${(parseFloat(busCo2Text)*0.68).toFixed(2)} kg",265 g/km,"~18 dk",B (Dengeli Emisyon)\n`;
+    csv += `"Tramvay Hatları (T1/T2/T3)","Elektrikli Tramvay",300 Yolcu,"${tramCo2Text}",90 g/km,"~14 dk",A+ (Çevreci / Önerilen)\n`;
+    csv += `"Elektrikli Otobüs (18M)","Körüklü EV",150 Yolcu,"0.00 kg",0 g/km,"~16 dk",A++ (Sıfır Emisyon)\n`;
+    csv += `"Özel Bireysel Otomobil","Binek Araç (1.6 Dizel)",1 Yolcu,"${(parseFloat(busCo2Text)*0.85).toFixed(2)} kg",220 g/km,"~15 dk",D (Yüksek Kişi Başı Emisyon)\n\n`;
+
+    csv += `Analiz Sonucu,"${savingText}"\n`;
+    csv += `Çevresel Kazanım,"Tramvay / EV kullanımı ile karbon ayak izinde %85 tasarruf sağlanmıştır."\n`;
+
+    triggerCSVDownload("Gaziantep_Guzergah_CO2_Karsilastirma_Analiz_Raporu.csv", csv);
+
+    showCustomMessageBox({
+        title: 'Güzergah Karşılaştırma Raporu İndirildi!',
+        subtitle: 'Seçtiğiniz duraklar arası detaylı CO2 emisyon tablosu ve analiz raporu bilgisayarınıza kaydedilmiştir.',
+        icon: 'fa-file-arrow-down',
+        iconBg: '#dcfce7',
+        iconColor: '#16a34a',
+        details: [
+            { label: 'Rapor Türü', value: 'Güzergah & CO2 Karşılaştırma Analizi', color: '#16a34a' },
+            { label: 'Güzergah', value: `${startText.split('-')[1] || startText} ➔ ${endText.split('-')[1] || endText}`, color: '#0f172a' },
+            { label: 'Mesafe', value: distText.replace('Mesafe: ', ''), color: '#2563eb' },
+            { label: 'Otobüs Salınım', value: busCo2Text, color: '#ef4444' },
+            { label: 'Tramvay Salınım', value: tramCo2Text, color: '#059669' }
+        ]
+    });
 }
 
 function haversine(lat1, lon1, lat2, lon2) {
