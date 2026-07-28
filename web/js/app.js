@@ -2285,3 +2285,122 @@ function downloadAccessibilityCSV() {
     });
     triggerCSVDownload("Gaziantep_Engelsiz_Ulasim_Erisilebilirlik_Veri_Seti.csv", csv);
 }
+
+/* FLOATING AI SMART CHATBOT WIDGET HANDLERS */
+let isAIChatOpen = false;
+
+function toggleAIChatWindow() {
+    const win = document.getElementById('ai-chat-window');
+    const icon = document.getElementById('ai-chat-icon');
+    if (!win) return;
+
+    isAIChatOpen = !isAIChatOpen;
+    if (isAIChatOpen) {
+        win.style.display = 'flex';
+        if (icon) icon.className = 'fa-solid fa-xmark';
+        const input = document.getElementById('ai-chat-input');
+        if (input) input.focus();
+    } else {
+        win.style.display = 'none';
+        if (icon) icon.className = 'fa-solid fa-robot';
+    }
+}
+
+function handleAIChatKeyPress(e) {
+    if (e.key === 'Enter') {
+        sendAIChatMessage();
+    }
+}
+
+function sendQuickAIChatQuestion(qText) {
+    const input = document.getElementById('ai-chat-input');
+    if (input) input.value = qText;
+    sendAIChatMessage();
+}
+
+async function sendAIChatMessage() {
+    const input = document.getElementById('ai-chat-input');
+    const container = document.getElementById('ai-chat-messages');
+    if (!input || !container) return;
+
+    const messageText = input.value.trim();
+    if (!messageText) return;
+
+    input.value = '';
+
+    const userBubble = document.createElement('div');
+    userBubble.style.cssText = 'display: flex; justify-content: flex-end; margin-bottom: 8px;';
+    userBubble.innerHTML = `
+        <div style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border-radius: 16px; border-top-right-radius: 4px; padding: 10px 14px; font-size: 0.85rem; max-width: 82%; line-height: 1.45; box-shadow: 0 3px 10px rgba(37,99,235,0.25);">
+            ${escapeHTML(messageText)}
+        </div>
+    `;
+    container.appendChild(userBubble);
+
+    const typingBubble = document.createElement('div');
+    typingBubble.id = 'ai-typing-indicator';
+    typingBubble.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-bottom: 8px;';
+    typingBubble.innerHTML = `
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; flex-shrink: 0;">
+            <i class="fa-solid fa-robot"></i>
+        </div>
+        <div style="background: white; border: 1.5px solid #e2e8f0; border-radius: 16px; border-top-left-radius: 4px; padding: 10px 14px; font-size: 0.82rem; color: #64748b; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-spinner fa-spin" style="color: #2563eb;"></i> Yapay zeka düşünüyor ve yanıt hazırlıyor...
+        </div>
+    `;
+    container.appendChild(typingBubble);
+    container.scrollTop = container.scrollHeight;
+
+    try {
+        const res = await fetch('/api/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: messageText })
+        });
+        const json = await res.json();
+
+        const typingEl = document.getElementById('ai-typing-indicator');
+        if (typingEl) typingEl.remove();
+
+        const aiResponseText = json.response || "Anlayamadım, lütfen tekrar sorunuz.";
+
+        const formattedResp = aiResponseText
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+
+        const aiBubble = document.createElement('div');
+        aiBubble.style.cssText = 'display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px;';
+        aiBubble.innerHTML = `
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; flex-shrink: 0; margin-top: 2px; box-shadow: 0 4px 10px rgba(37,99,235,0.3);">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div style="background: white; border: 1.5px solid #cbd5e1; border-radius: 16px; border-top-left-radius: 4px; padding: 12px 14px; font-size: 0.85rem; color: #0f172a; line-height: 1.5; box-shadow: 0 4px 12px rgba(15,23,42,0.06); max-width: 86%;">
+                ${formattedResp}
+            </div>
+        `;
+        container.appendChild(aiBubble);
+        container.scrollTop = container.scrollHeight;
+
+    } catch (err) {
+        console.error("AI Chat Error:", err);
+        const typingEl = document.getElementById('ai-typing-indicator');
+        if (typingEl) typingEl.remove();
+
+        const errBubble = document.createElement('div');
+        errBubble.style.cssText = 'display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px;';
+        errBubble.innerHTML = `
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: #ef4444; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; flex-shrink: 0;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div style="background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 16px; border-top-left-radius: 4px; padding: 12px 14px; font-size: 0.85rem; color: #b91c1c;">
+                Bağlantı hatası oluştu. Sunucunun aktif olduğundan emin olun.
+            </div>
+        `;
+        container.appendChild(errBubble);
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+function escapeHTML(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
