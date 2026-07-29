@@ -2412,7 +2412,7 @@ function appendBotBubble(markdownText, suggestions) {
     let processedText = markdownToHtml(markdownText);
 
     row.innerHTML = `
-        <div class="ai-avatar">🤖</div>
+        <div class="ai-avatar">🚌</div>
         <div style="display:flex;flex-direction:column;gap:6px;max-width:85%;">
             <div class="ai-bubble ai-bubble-bot">
                 <div class="ai-bubble-text">${markdownToHtml(markdownText)}</div>
@@ -2444,7 +2444,7 @@ function clearAIChat() {
     if (!container) return;
     container.innerHTML = `
         <div class="ai-msg-row ai-msg-bot">
-            <div class="ai-avatar">🤖</div>
+            <div class="ai-avatar">🚌</div>
             <div class="ai-bubble ai-bubble-bot">
                 <div class="ai-bubble-text">Sohbet temizlendi! 🧹 Yeni bir şeyler sorabilirsiniz.</div>
                 <div class="ai-bubble-time">${getCurrentTime()}</div>
