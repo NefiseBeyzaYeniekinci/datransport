@@ -1230,12 +1230,15 @@ def ai_chat():
                                  "otobus var", "hat geciy", "hangi otobusl"]) and \
          not any(w in msg for w in ["ne zaman", "gelir", "sefer", "saat", "kac dakika"]):
 
-        # Durak adını mesajdan çıkar — sadece gereksiz kelimeleri temizle
-        noise = r"(hangi hat(lar)?|hangi otobus(ler)?|geciyor|gecen|duragindan|duraginda|duragindan|ne geciyör|var mi|var|hatlari|hatlar|gecer|gecmekte)"
-        stop_name_guess = re.sub(noise, "", msg).strip()
-        # 'durak' kelimesini de temizle ama önce durak adını çek
-        stop_name_guess = re.sub(r'\bdurak\w*\b', '', stop_name_guess).strip()
-        stop_name_guess = stop_name_guess.strip(" ?,.!")
+        # Durak adını mesajdan çıkar — kelime sınırları ve gereksiz ekler ile
+        noise = r'\b(hangi hat(lar)?|hangi otobus(ler)?|geciyor|gecen|duragindayim|duragindan|duraginda|duragi|ne geciyör|var mi|var|hatlari|hatlar|gecer|gecmekte|ben|benim|icin|ile|de|da|dan|den|tan|ten|ta|te|yim|yim|yum|yum|im)\b'
+        stop_name_guess = re.sub(noise, ' ', msg).strip()
+        # 'durak' kelimesini de temizle
+        stop_name_guess = re.sub(r'\bdurak\w*\b', ' ', stop_name_guess).strip()
+        
+        # Anlamlı token'ları al (2 harften uzun ve gürültü olmayanlar)
+        tokens = [t.strip(' ?,.!') for t in stop_name_guess.split() if len(t.strip(' ?,.!')) > 2]
+        stop_name_guess = ' '.join(tokens).strip()
 
         found_stops = _find_stops_by_name(stop_name_guess, max_results=3) if len(stop_name_guess) > 2 else []
 
