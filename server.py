@@ -916,181 +916,746 @@ def ai_route_recommend():
         "modes_comparison": modes_comparison
     })
 
+
+# ============================================================
+#  CHATBOT YARDIMCI FONKSİYONLARI  (GTFS Tabanlı)
+# ============================================================
+
+def _tr_norm(text):
+    """Türkçe karakterleri normalize et, küçük harfe çevir."""
+    rep = {'ç':'c','ğ':'g','ı':'i','i̇':'i','ö':'o','ş':'s','ü':'u',
+           'Ç':'c','Ğ':'g','I':'i','İ':'i','Ö':'o','Ş':'s','Ü':'u'}
+    t = text.lower()
+    for k, v in rep.items():
+        t = t.replace(k, v)
+    return t
+
+def _find_stops_by_name(query, max_results=8):
+    """GTFS stops.txt'ten durak adına göre fuzzy arama yap."""
+    results = []
+    if not gtfs_store.is_loaded or gtfs_store.stops_df is None:
+        return results
+    q = _tr_norm(query)
+    for _, row in gtfs_store.stops_df.iterrows():
+        name = str(row.get('stop_name', ''))
+        if q in _tr_norm(name):
+            results.append({
+                'stop_id': str(row['stop_id']),
+                'stop_name': name,
+                'lat': float(row.get('stop_lat', 0)),
+                'lng': float(row.get('stop_lon', 0))
+            })
+        if len(results) >= max_results:
+            break
+    return results
+
+def _get_routes_at_stop(stop_id):
+    """Belirli bir duraktan geçen hatları bul."""
+    if not gtfs_store.is_loaded or gtfs_store.stop_times_df is None:
+        return []
+    sid = str(stop_id)
+    st = gtfs_store.stop_times_df
+    st_stop = st[st['stop_id'].astype(str) == sid]
+    if st_stop.empty:
+        return []
+    trip_ids = st_stop['trip_id'].unique()
+    routes = []
+    seen = set()
+    if gtfs_store.trips_df is not None and gtfs_store.routes_df is not None:
+        trips_at_stop = gtfs_store.trips_df[gtfs_store.trips_df['trip_id'].isin(trip_ids)]
+        route_ids = trips_at_stop['route_id'].unique()
+        for rid in route_ids:
+            r_row = gtfs_store.routes_df[gtfs_store.routes_df['route_id'] == rid]
+            if not r_row.empty:
+                code = str(r_row.iloc[0].get('route_short_name', '')).strip()
+                name = str(r_row.iloc[0].get('route_long_name', '')).strip()
+                color = str(r_row.iloc[0].get('route_color', 'FF6600')).strip()
+                if not color.startswith('#'):
+                    color = '#' + color
+                if code and code not in seen:
+                    seen.add(code)
+                    routes.append({'code': code, 'name': name, 'color': color})
+    routes.sort(key=lambda x: x['code'])
+    return routes
+
+def _get_next_departures(stop_id, route_code=None, limit=5):
+    """Bir durak için bir sonraki kalkış saatlerini hesapla (gerçek zamanlı)."""
+    if not gtfs_store.is_loaded or gtfs_store.stop_times_df is None:
+        return []
+
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    now_minutes = now.hour * 60 + now.minute
+
+    # Bugün hangi service_id geçerli?
+    weekday = now.weekday()  # 0=Pazartesi, 5=Cumartesi, 6=Pazar
+    if weekday < 5:
+        service_ids = ['0']       # Hafta içi
+    elif weekday == 5:
+        service_ids = ['1']       # Cumartesi
+    else:
+        service_ids = ['2']       # Pazar
+
+    sid = str(stop_id)
+    st = gtfs_store.stop_times_df
+    st_stop = st[st['stop_id'].astype(str) == sid].copy()
+    if st_stop.empty:
+        return []
+
+    # Seferleri ve hatları eşleştir
+    departures = []
+    trips_df = gtfs_store.trips_df
+    routes_df = gtfs_store.routes_df
+
+    for _, row in st_stop.iterrows():
+        dep_str = str(row.get('departure_time', ''))
+        try:
+            parts = dep_str.split(':')
+            dep_h, dep_m = int(parts[0]), int(parts[1])
+            # GTFS bazı seferlerde 24:00+ saat kullanır (gece yarısı sonrası)
+            dep_minutes = dep_h * 60 + dep_m
+        except Exception:
+            continue
+
+        # Zaten geçmiş seferleri filtrele (veya yakın gelecek için al)
+        diff = dep_minutes - now_minutes
+        if diff < -5:  # 5 dakika öncesine kadar göster
+            # Ertesi günün seferi olabilir - 24*60 ekle
+            diff += 24 * 60
+
+        if 0 <= diff <= 120:  # Önümüzdeki 2 saatlik pencerede
+            tid = row.get('trip_id')
+            route_info = None
+            if trips_df is not None and routes_df is not None:
+                t_row = trips_df[trips_df['trip_id'] == tid]
+                if not t_row.empty:
+                    rid = t_row.iloc[0]['route_id']
+                    r_row = routes_df[routes_df['route_id'] == rid]
+                    if not r_row.empty:
+                        code = str(r_row.iloc[0].get('route_short_name', '')).strip()
+                        rname = str(r_row.iloc[0].get('route_long_name', '')).strip()
+                        headsign = str(t_row.iloc[0].get('trip_headsign', '')).strip()
+                        route_info = {'code': code, 'name': rname, 'headsign': headsign}
+
+            if route_info:
+                if route_code and _tr_norm(route_code) != _tr_norm(route_info['code']):
+                    continue
+                departures.append({
+                    'time': f"{dep_h:02d}:{dep_m:02d}",
+                    'diff_min': diff,
+                    'route_code': route_info['code'],
+                    'route_name': route_info['name'],
+                    'headsign': route_info['headsign']
+                })
+
+    # Sıralayıp ilk limit adet al
+    departures.sort(key=lambda x: x['diff_min'])
+    return departures[:limit]
+
+def _find_routes_between(origin_query, dest_query):
+    """İki konum/durak arasında geçen ortak hatları bul."""
+    # Konum için alternatif arama terimleri
+    origin_aliases = [origin_query]
+    dest_aliases = [dest_query]
+
+    # Bilinen takma adlar
+    alias_map = {
+        "Gaziantep Üniversitesi": ["Gaun", "Universitesi", "Uygulama Oteli", "Gaziantep Uni"],
+        "Üniversite": ["Gaun", "Universitesi"],
+        "Karataş": ["Karatas", "Karataş"],
+        "Gatem": ["Gatem", "Kundura"],
+        "İstasyon": ["Istasyon", "Tren Gar"],
+        "Balıklı": ["Balikli"],
+        "Mavikent": ["Mavikent"],
+        "Beykent": ["Beykent"],
+        "Gazikent": ["Gazikent"],
+        "Adliye": ["Adliye"],
+        "Otogar": ["Otogar"],
+        "Şehir Hastanesi": ["Sehir Hastanesi", "Hastane"],
+        "Tıp Fakültesi": ["Tip Fak", "Tip Fakültesi"],
+    }
+    for key, aliases in alias_map.items():
+        if _tr_norm(key) in _tr_norm(origin_query):
+            origin_aliases.extend(aliases)
+        if _tr_norm(key) in _tr_norm(dest_query):
+            dest_aliases.extend(aliases)
+
+    # Her alias için dur ara
+    origin_stops = []
+    for alias in origin_aliases:
+        stops = _find_stops_by_name(alias, max_results=5)
+        for s in stops:
+            if s not in origin_stops:
+                origin_stops.append(s)
+        if len(origin_stops) >= 5:
+            break
+
+    dest_stops = []
+    for alias in dest_aliases:
+        stops = _find_stops_by_name(alias, max_results=5)
+        for s in stops:
+            if s not in dest_stops:
+                dest_stops.append(s)
+        if len(dest_stops) >= 5:
+            break
+
+    if not origin_stops or not dest_stops:
+        return [], origin_stops, dest_stops
+
+    # Her duraktan geçen hatları bul, kesişim al
+    origin_routes_set = set()
+    for s in origin_stops[:5]:
+        for r in _get_routes_at_stop(s['stop_id']):
+            origin_routes_set.add(r['code'])
+
+    dest_routes_set = set()
+    for s in dest_stops[:5]:
+        for r in _get_routes_at_stop(s['stop_id']):
+            dest_routes_set.add(r['code'])
+
+    common = origin_routes_set & dest_routes_set
+    return sorted(common), origin_stops, dest_stops
+
+def _parse_route_code_from_msg(msg):
+    """Mesajdan hat kodunu çıkar (örn. B01, S01, T1, M14...)."""
+    import re
+    patterns = [
+        r'\b(t[123])\b', r'\b(gr01)\b', r'\b(b\d{1,3}(?:-\d)?)\b',
+        r'\b(s\d{1,2}(?:-\d)?)\b', r'\b(m\d{1,2}(?:-\d)?)\b',
+        r'\b(k\d{1,2})\b', r'\b(n\d{2})\b', r'\b(ga[123])\b',
+        r'\b(ta\d{1,3})\b'
+    ]
+    m_lower = msg.lower()
+    for p in patterns:
+        match = re.search(p, m_lower)
+        if match:
+            return match.group(1).upper()
+    return None
+
+# ============================================================
+#  ANA CHATBOT ENDPOINT
+# ============================================================
+
 @app.route("/api/ai-chat", methods=["POST", "OPTIONS"])
 def ai_chat():
-    """AI asistan chat endpoint'i - Gaziantep ulaşım sorularını yanıtlar."""
+    """Gaziantep GTFS verileriyle güçlendirilmiş akıllı chatbot endpoint'i."""
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
 
     data = request.json or {}
-    user_message = str(data.get("message", "")).strip().lower()
+    user_message = str(data.get("message", "")).strip()
     history = data.get("history", [])
 
-    # Türkçe karakter normalizasyonu
-    def tr_norm(text):
-        replacements = {
-            'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i̇': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
-            'Ç': 'c', 'Ğ': 'g', 'I': 'i', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u'
-        }
-        for k, v in replacements.items():
-            text = text.replace(k, v)
-        return text.lower()
+    msg_orig = user_message
+    msg = _tr_norm(user_message)
 
-    msg = tr_norm(user_message)
-
-    # ---- CEVAP MANTIK AĞACI ----
     reply = ""
     suggestions = []
+    extra = {}   # Ek yapılandırılmış veri (duraklar, saatler vb.)
 
-    # Selamlama
-    if any(w in msg for w in ["merhaba", "selam", "hey", "naber", "iyi gunler", "iyi aksamlar", "nasılsın", "nasilsin", "nasilsiniz"]):
-        reply = "Merhaba! 👋 Ben **DATransport AI Asistanı**yım. Gaziantep'te ulaşımla ilgili aklınıza takılan her şeyi sorabilirsiniz!\n\n🚌 Hat sorguları, durak bilgileri, CO2 tasarrufu, GaziBis kiralama veya otopark hakkında yardımcı olabilirim."
-        suggestions = ["Hangi hattı kullansam?", "CO2 tasarrufu nasıl hesaplanır?", "GaziBis nedir?"]
+    import re
 
-    # Rota / Hat / Güzergah soruları
-    elif any(w in msg for w in ["hat", "guzergah", "rota", "hangi hat", "hangi otobus", "b01", "b02", "t1", "t2", "t3", "tramvay"]):
-        reply = "🗺️ **Gaziantep Toplu Ulaşım Hatları:**\n\n" \
-                "• **T1 / T2 / T3** — Tramvay hatları (en hızlı, trafikten bağımsız)\n" \
-                "• **B01** — Gazikent ↔ Ensar Sitesi\n" \
-                "• **B02** — Şehitkamil ↔ Karataş\n" \
-                "• **18M EV** — Elektrikli körüklü otobüs (sıfır emisyon)\n\n" \
-                "📌 Harita sekmesinden herhangi bir hata tıklayarak canlı durak listesini ve sefer saatlerini görebilirsiniz."
-        suggestions = ["Tramvay kaç dakikada gider?", "CO2 hesapla", "Otopark nerede?"]
+    # ============================================================
+    # INTENT 1: Selamlama
+    # ============================================================
+    if any(w in msg for w in ["merhaba", "selam", "hey", "naber", "hosgeldin",
+                               "iyi gunler", "iyi aksamlar", "nasilsin"]):
+        total_stops = len(gtfs_store.stops_df) if gtfs_store.is_loaded and gtfs_store.stops_df is not None else 2942
+        total_routes = len(gtfs_store.routes_df) if gtfs_store.is_loaded and gtfs_store.routes_df is not None else 147
+        reply = (
+            f"Merhaba! 👋 Ben **DATransport Asistanı**yım.\n\n"
+            f"Gaziantep toplu ulaşım sisteminde **{total_routes} hat** ve **{total_stops} durak** "
+            f"hakkında gerçek verilerle yardımcı olabilirim!\n\n"
+            "🚌 Ne sormak istersiniz?"
+        )
+        suggestions = ["Karataş'tan üniversiteye nasıl giderim?",
+                       "S01 hattı hangi durakları geçer?",
+                       "Balıklı durağından sonraki sefer ne zaman?",
+                       "T1 tramvay hattı nereye gider?"]
 
-    # Durak / Konum soruları
-    elif any(w in msg for w in ["durak", "nerede", "nereye", "kalkis", "varis", "karatas", "gazikent", "gatem", "demokrasi", "valilik"]):
-        # Durak sayısını veri setinden çek
-        total_stops = len(df_stops) if df_stops is not None else 1500
-        reply = f"📍 **Durak Bilgisi:**\n\n" \
-                f"Sistemde toplam **{total_stops}** Gaziantep toplu ulaşım durağı kayıtlıdır.\n\n" \
-                "🔍 Belirli bir durak aramak için:\n" \
-                "1. Harita sekmesine gidin\n" \
-                "2. **CO2 Karşılaştırıcı** aracını açın\n" \
-                "3. Arama kutusuna durak adını yazın (Türkçe karaktersiz de çalışır!)\n\n" \
-                "💡 Örnek: *'Karataş'*, *'Demokrasi Meydan'*, *'Gazikent'* yazabilirsiniz."
-        suggestions = ["Karataş'a hangi hat gider?", "T1 tramvayı nereye kadar gider?", "CO2 hesapla"]
+    # ============================================================
+    # INTENT 2: A'dan B'ye nasıl giderim? (rota önerisi)
+    # ============================================================
+    elif re.search(r"(nasil\s*gider|nasil\s*gidebilir|nasil\s*ulasir|ulasim|nasil\s*git|gitme[ky]|nasl\s*git)", msg) or \
+         re.search(r"(dan|ten|den|tan)\s+\w+(e|a|ye|ya)\s+", msg) or \
+         (any(w in msg for w in ["gitmek", "gidebilir", "nasil", "ulasim", "yol"]) and
+          any(w in msg for w in ["universite", "hastane", "otogar", "merkez", "gatem", "karatas",
+                                  "gazikent", "beykent", "istasyon", "adliye", "gar", "balikli",
+                                  "mavikent", "ipekevler", "gaziantep", "sehir", "gibtü", "gibtü",
+                                  "gibtuu", "oguzel", "oguzeli", "onderr", "seyrantepe"])):
 
-    # CO2 / Çevre / Emisyon soruları
-    elif any(w in msg for w in ["co2", "emisyon", "karbondioksit", "cevre", "yesil", "agac", "tasarruf", "kirlilik", "hava"]):
-        reply = "🌿 **CO2 & Çevre Tasarrufu:**\n\n" \
-                "Gaziantep'te toplu taşımayla seyahat ederek büyük çevresel tasarruf sağlarsınız:\n\n" \
-                "| Araç | CO2 / km |\n|------|----------|\n" \
-                "| 🚃 Tramvay | ~0.04 kg |\n" \
-                "| ⚡ EV Otobüs | 0 kg |\n" \
-                "| 🚌 Belediye Otobüsü | ~0.28 kg |\n" \
-                "| 🚗 Bireysel Araç | ~0.22 kg |\n\n" \
-                "📊 **CO2 Karşılaştırma Raporu** sekmesinden iki durak arasındaki farkı hesaplayabilirsiniz!"
-        suggestions = ["CO2 nasıl hesaplanır?", "Tramvay vs Otobüs karşılaştır", "GaziBis nedir?"]
+        # Kaynak ve hedefi mesajdan tahmin et
+        origin_hint = ""
+        dest_hint   = ""
 
-    # Süre / Zaman / Kaç dakika soruları
-    elif any(w in msg for w in ["kac dakika", "ne kadar", "sure", "zaman", "hiz", "hizli", "yavas", "trafik"]):
-        reply = "⏱️ **Tahmini Seyahat Süreleri** (6 km örnek mesafe için):\n\n" \
-                "• 🚃 **Tramvay (T1/T2/T3):** ~15 dk *(trafik etkilemez)*\n" \
-                "• ⚡ **EV Otobüs:** ~17 dk\n" \
-                "• 🚌 **Belediye Otobüsü:** Trafiğe göre 20–35 dk\n" \
-                "• 🚗 **Bireysel Araç:** Pik saatte 30–50 dk\n\n" \
-                "🔴 **Pik Saatler:** 07:00-09:00 ve 17:00-19:00 arası karayolu trafiği en yoğun dönemdir.\n" \
-                "✅ Bu saatlerde **tramvay tercih etmeniz önerilir.**"
-        suggestions = ["Hangi hat en hızlı?", "Pik saatte ne kullanmalıyım?", "CO2 hesapla"]
+        location_kws = {
+            "karatas": "Karataş",
+            "gazikent": "Gazikent",
+            "gatem": "Gatem",
+            "universite": "Gaziantep Üniversitesi",
+            "gaun": "Gaziantep Üniversitesi",
+            "uni ": "Gaziantep Üniversitesi",
+            "hastane": "Şehir Hastanesi",
+            "sehir hastanesi": "Şehir Hastanesi",
+            "otogar": "Otogar",
+            "istasyon": "İstasyon",
+            "gar ": "Gar",
+            "adliye": "Adliye",
+            "balikli": "Balıklı",
+            "mavikent": "Mavikent",
+            "beykent": "Beykent",
+            "ipekevler": "İpekevler",
+            "gibtuu": "Gibtü",
+            "gibtü": "Gibtü",
+            "oguzel": "Oğuzeli",
+            "onderr": "Önderbirlik",
+            "seyrantepe": "Seyrantepe",
+            "akkent": "Akkent",
+            "binevler": "Binevler",
+            "kuzey": "Kuzeyşehir",
+            "tip fak": "Tıp Fakültesi",
+        }
+        found_locs = []
+        for kw, display in location_kws.items():
+            if kw in msg and display not in found_locs:
+                found_locs.append(display)
 
-    # GaziBis soruları
-    elif any(w in msg for w in ["gazibis", "bisiklet", "kiral", "bike", "pedal", "gazi bis"]):
-        reply = "🚲 **GaziBis Akıllı Bisiklet Sistemi:**\n\n" \
-                "Gaziantep'in paylaşımlı akıllı bisiklet sistemidir.\n\n" \
-                "📌 **Nasıl Çalışır?**\n" \
-                "• Şehir genelinde istasyonlardan bisiklet kiralayabilirsiniz\n" \
-                "• Kısa mesafelerde (1-4 km) en hızlı ve sıfır emisyonlu ulaşım\n" \
-                "• İstasyon noktaları haritada 🟢 yeşil nokta olarak işaretlidir\n\n" \
-                "🗺️ Harita sekmesinde **GaziBis İstasyonları** butonuna tıklayarak tüm noktaları görebilirsiniz."
-        suggestions = ["GaziBis ücreti ne kadar?", "En yakın istasyon nerede?", "CO2 tasarrufu?"]
+        if len(found_locs) >= 2:
+            origin_hint = found_locs[0]
+            dest_hint   = found_locs[1]
+        elif len(found_locs) == 1:
+            dest_hint   = found_locs[0]
+            origin_hint = "İstasyon"
 
-    # Otopark soruları
-    elif any(w in msg for w in ["otopark", "park", "araç park", "ucretli", "ucretsiz", "akilli park"]):
-        reply = "🅿️ **Otopark Bilgileri:**\n\n" \
-                "DATransport üzerinden Gaziantep'teki akıllı otoparkları görüntüleyebilir ve rezervasyon yapabilirsiniz.\n\n" \
-                "• 🔵 **Ücretli Otoparklar** — Şehir merkezinde\n" \
-                "• 🟢 **Ücretsiz Park Alanları** — Çevre ilçelerde\n" \
-                "• ♿ **Engelli Park Yerleri** — Tüm otoparklarda ayrılmış\n\n" \
-                "📋 **Rezervasyon için:** Harita → Otopark Göster → Rezervasyon Yap butonunu kullanın."
-        suggestions = ["Otopark rezervasyonu nasıl yapılır?", "Şehir merkezinde otopark?", "GaziBis alternatifleri?"]
+        if origin_hint and dest_hint:
+            common_routes, origin_stops, dest_stops = _find_routes_between(origin_hint, dest_hint)
 
-    # Erişilebilirlik soruları
-    elif any(w in msg for w in ["engelli", "tekerlekli", "erisim", "erisebilir", "eba", "goreme", "isitme", "kör"]):
-        reply = "♿ **Erişilebilirlik Bilgileri:**\n\n" \
-                "Gaziantep toplu ulaşımı engelli vatandaşlar için kapsamlı destekler sunmaktadır:\n\n" \
-                "• Tüm tramvay durakları **alçak platformlu** ve **tekerlekli sandalye erişimli**\n" \
-                "• Körüklü otobüslerde **rampa sistemi** mevcut\n" \
-                "• Kilit duraklarda **sesli yönlendirme** sistemi aktif\n\n" \
-                "🗺️ Harita sekmesindeki **Erişilebilirlik Hizmetleri** katmanını açarak tüm erişilebilir noktaları görebilirsiniz."
-        suggestions = ["Erişilebilir duraklar nerede?", "Tramvay erişilebilir mi?"]
+            if common_routes:
+                routes_list = "\n".join([f"• **{r}** hattı" for r in common_routes[:6]])
+                o_name = origin_stops[0]['stop_name'] if origin_stops else origin_hint
+                d_name = dest_stops[0]['stop_name'] if dest_stops else dest_hint
+                reply = (
+                    f"🗺️ **{origin_hint} → {dest_hint} Güzergahı:**\n\n"
+                    f"Bu iki nokta arasında kullanabileceğiniz hatlar:\n\n"
+                    f"{routes_list}\n\n"
+                    f"📍 Kalkış durağı: *{o_name}*\n"
+                    f"📍 Varış durağı yakını: *{d_name}*\n\n"
+                    f"💡 Hat saatlerini öğrenmek için '[HAT KODU] ne zaman gelir?' diye sorabilirsiniz."
+                )
+                suggestions = [f"{common_routes[0]} ne zaman gelir?",
+                               f"{common_routes[0]} hangi durakları geçer?",
+                               "Aktarma nasıl yapılır?"]
+            else:
+                # Doğrudan hat yok — her iki noktadaki hatları ayrı göster
+                origin_routes = []
+                for s in (origin_stops or [])[:3]:
+                    for r in _get_routes_at_stop(s['stop_id']):
+                        if r['code'] not in [x['code'] for x in origin_routes]:
+                            origin_routes.append(r)
 
-    # Ücret / Tarife soruları
-    elif any(w in msg for w in ["ucret", "fiyat", "bilet", "kart", "gazicard", "ne kadar tutar", "kaç tl", "para"]):
-        reply = "💳 **Ücret & Tarife Bilgileri:**\n\n" \
-                "• **GaziCard** ile tüm toplu taşıma araçlarında geçerli entegre ödeme\n" \
-                "• Aktarmalı yolculuklarda **indirimli tarife** uygulanır\n" \
-                "• Öğrenci, 65 yaş üstü ve engelli vatandaşlar **ücretsiz** ya da **indirimli** yararlanır\n\n" \
-                "📌 Güncel tarife bilgisi için **Gaziulaş** resmi web sitesini ziyaret edebilirsiniz."
+                dest_routes = []
+                for s in (dest_stops or [])[:3]:
+                    for r in _get_routes_at_stop(s['stop_id']):
+                        if r['code'] not in [x['code'] for x in dest_routes]:
+                            dest_routes.append(r)
+
+                origin_list = ", ".join([f"**{r['code']}**" for r in origin_routes[:6]])
+                dest_list   = ", ".join([f"**{r['code']}**" for r in dest_routes[:6]])
+
+                # Tramvay varsa özellikle öner
+                tram_transfer = ""
+                all_orig_codes = {r['code'] for r in origin_routes}
+                all_dest_codes = {r['code'] for r in dest_routes}
+                if any(c in all_orig_codes for c in ['T1','T2','T3','GR01','S01','S04']):
+                    tram_transfer = "\n\n🚊 **Öneri:** Karataş'tan **S01** veya **S04** ile Gatem'e gidin, oradan üniversiteye ulaşan hatta aktarın."
+
+                reply = (
+                    f"🗺️ **{origin_hint} → {dest_hint}**\n\n"
+                    f"Bu güzergahta **tek hatla direkt gidiş** yok, ancak şöyle yapabilirsiniz:\n\n"
+                    f"📍 **{origin_hint}** bölgesindeki hatlar:\n{origin_list or 'Bulunamadı'}\n\n"
+                    f"📍 **{dest_hint}** bölgesindeki hatlar:\n{dest_list or 'Bulunamadı'}\n\n"
+                    f"💡 **Aktarma önerisi:** Bu iki bölgeden her ikisine de giden ortak bir noktada (örn. İstasyon, Gar veya merkezi bir durak) aktarma yapabilirsiniz."
+                    f"{tram_transfer}"
+                )
+                sug1 = origin_routes[0]['code'] + " hangi durakları geçer?" if origin_routes else "S01 hattı nereye gider?"
+                sug2 = dest_routes[0]['code']   + " hangi durakları geçer?" if dest_routes   else "T1 tramvay nereye gider?"
+                suggestions = [sug1, sug2, "T1 tramvay hattı nereye gider?"]
+        else:
+            reply = (
+                "🗺️ **Güzergah Önerisi:**\n\n"
+                "Nereye gitmek istediğinizi biraz daha açabilir misiniz?\n\n"
+                "Örneğin:\n"
+                "• *'Karataş'tan Üniversite'ye nasıl giderim?'*\n"
+                "• *'Gazikent'ten Balıklı'ya gitmek istiyorum'*\n\n"
+                "Başlangıç ve bitiş noktanızı yazdığınızda en uygun hatları buluyorum! 🚌"
+            )
+            suggestions = ["Karataş'tan üniversiteye nasıl giderim?",
+                           "Gazikent'ten Balıklı'ya nasıl giderim?",
+                           "S01 hattı nereye gider?"]
+
+    # ============================================================
+    # INTENT 3: Bu duraktan geçen hatlar
+    # ============================================================
+    elif any(w in msg for w in ["hangi hat", "hangi otobus", "geciyor", "gecen hat",
+                                 "duragindan", "ne geciyör", "gecen", "hatlar var",
+                                 "otobus var", "hat geciy", "hangi otobusl"]) and \
+         not any(w in msg for w in ["ne zaman", "gelir", "sefer", "saat", "kac dakika"]):
+
+        # Durak adını mesajdan çıkar — sadece gereksiz kelimeleri temizle
+        noise = r"(hangi hat(lar)?|hangi otobus(ler)?|geciyor|gecen|duragindan|duraginda|duragindan|ne geciyör|var mi|var|hatlari|hatlar|gecer|gecmekte)"
+        stop_name_guess = re.sub(noise, "", msg).strip()
+        # 'durak' kelimesini de temizle ama önce durak adını çek
+        stop_name_guess = re.sub(r'\bdurak\w*\b', '', stop_name_guess).strip()
+        stop_name_guess = stop_name_guess.strip(" ?,.!")
+
+        found_stops = _find_stops_by_name(stop_name_guess, max_results=3) if len(stop_name_guess) > 2 else []
+
+        if found_stops:
+            s = found_stops[0]
+            routes = _get_routes_at_stop(s['stop_id'])
+            if routes:
+                route_lines = "\n".join([f"• **{r['code']}** — {r['name']}" for r in routes])
+                reply = (
+                    f"🚌 **{s['stop_name']}** durağından geçen hatlar:\n\n"
+                    f"{route_lines}\n\n"
+                    f"📍 Toplam **{len(routes)}** hat bu durağa uğramaktadır."
+                )
+                suggestions = [f"{routes[0]['code']} ne zaman gelir?",
+                               f"{routes[0]['code']} hangi durakları geçer?",
+                               "Bir sonraki sefer saati?"]
+            else:
+                reply = f"⚠️ **{s['stop_name']}** durağı için hat bilgisi bulunamadı."
+                suggestions = ["Başka bir durak sor", "Tüm hatları listele"]
+        else:
+            reply = (
+                "📍 **Durak Sorgulama:**\n\n"
+                "Hangi durağı sorduğunuzu anlayamadım. Lütfen durak adını tam yazın.\n\n"
+                "Örnek: *'Balıklı durağından hangi hatlar geçer?'*\n"
+                "Veya: *'Karataş'ta hangi otobüsler var?'*"
+            )
+            suggestions = ["Balıklı durağından hangi hatlar geçer?",
+                           "Karataş'ta hangi otobüsler var?",
+                           "S01 hattı nereye gider?"]
+
+    # ============================================================
+    # INTENT 4: Hat güzergahı sorgulama (hangi durakları geçer?)
+    # ============================================================
+    elif any(w in msg for w in ["duraklar", "durak listesi", "guzergah", "nerelerden",
+                                 "hangi duraklari", "gecen duraklar", "hatti"]) or \
+         (_parse_route_code_from_msg(msg) and
+          any(w in msg for w in ["durak", "guzergah", "gider", "nereye", "nereden", "nereler", "hatta"])):
+
+        route_code = _parse_route_code_from_msg(msg)
+        if route_code:
+            meta, stops_list, _ = gtfs_store.get_route_details(route_code)
+            if meta and stops_list:
+                stops_preview = stops_list[:12]
+                stop_lines = "\n".join([f"{i+1}. {s['stop_name']}" for i, s in enumerate(stops_preview)])
+                if len(stops_list) > 12:
+                    stop_lines += f"\n... ve **{len(stops_list) - 12}** durak daha"
+                reply = (
+                    f"🗺️ **{meta['route_name']}** güzergahı:\n\n"
+                    f"{stop_lines}\n\n"
+                    f"📊 Toplam **{len(stops_list)}** durak."
+                )
+                suggestions = [f"{route_code} ne zaman gelir?",
+                               f"{route_code} ilk durağından ne zaman kalkıyor?",
+                               "Aktarma nasıl yapılır?"]
+            else:
+                reply = f"⚠️ **{route_code}** hattı için durak bilgisi bulunamadı. Lütfen hat kodunu kontrol edin."
+                suggestions = ["Tüm hatları listele", "S01 hattı nereye gider?"]
+        else:
+            reply = (
+                "🚌 **Hat Güzergahı Sorgulama:**\n\n"
+                "Hangi hatın güzergahını öğrenmek istiyorsunuz?\n\n"
+                "Lütfen hat kodunu belirtin. Örnekler:\n"
+                "• *'S01 hattı hangi durakları geçer?'*\n"
+                "• *'T1 tramvayının güzergahı nedir?'*\n"
+                "• *'B35 nereye gider?'*"
+            )
+            suggestions = ["S01 hattı hangi durakları geçer?",
+                           "T1 tramvayının güzergahı nedir?",
+                           "B35 nereye gider?"]
+
+    # ============================================================
+    # INTENT 5: Sefer saati / ne zaman gelir?
+    # ============================================================
+    elif any(w in msg for w in ["ne zaman", "kac dakika", "gelir", "bekle", "dakika",
+                                 "sefer", "saat", "kalkis", "varis", "sonraki", "sefer var"]):
+
+        route_code = _parse_route_code_from_msg(msg)
+
+        # Durak adını mesajdan çıkar — word-boundary regex ile gürültü temizle
+        noise2 = r'\b(ne zaman|kac dakika|sonraki|sefer var|sefer|saat|kalkis|varis|bekle|duragindan|duraginda|duragi|gelir|dakika|var mi|var|mi|ta|da|de|dan|ten|den|tan|bir|ile|icin)\b'
+        stop_name_guess = re.sub(noise2, ' ', msg).strip()
+        if route_code:
+            stop_name_guess = re.sub(re.escape(route_code.lower()), '', stop_name_guess, flags=re.IGNORECASE).strip()
+        # Anlamlı token'ları al (2 harften uzun)
+        tokens = [t.strip(' ?,.!') for t in stop_name_guess.split() if len(t.strip(' ?,.!')) > 2]
+        stop_name_guess = ' '.join(tokens).strip()
+
+        found_stops = []
+        if len(stop_name_guess) > 2:
+            found_stops = _find_stops_by_name(stop_name_guess, max_results=3)
+
+        if found_stops:
+            s = found_stops[0]
+            departures = _get_next_departures(s['stop_id'], route_code=route_code, limit=6)
+
+            if departures:
+                dep_lines = []
+                for d in departures:
+                    mins = d['diff_min']
+                    if mins == 0:
+                        when = "**Şu an hareket ediyor!**"
+                    elif mins <= 2:
+                        when = f"**{mins} dakika** sonra (hemen gel!)"
+                    elif mins <= 10:
+                        when = f"**{mins} dakika** sonra"
+                    else:
+                        when = f"**{mins} dakika** sonra ({d['time']})"
+                    dep_lines.append(
+                        f"🚌 **{d['route_code']}** — {d['headsign'] or d['route_name']}\n"
+                        f"   ⏰ {when}"
+                    )
+                dep_text = "\n\n".join(dep_lines)
+                reply = (
+                    f"⏱️ **{s['stop_name']}** durağı için yaklaşan seferler:\n\n"
+                    f"{dep_text}\n\n"
+                    f"📅 Şu an saat **{__import__('datetime').datetime.now().strftime('%H:%M')}**"
+                )
+                suggestions = [f"{departures[0]['route_code']} hangi durakları geçer?",
+                               "Başka bir durak sor",
+                               "CO2 hesapla"]
+            else:
+                from datetime import datetime
+                now_str = datetime.now().strftime('%H:%M')
+                reply = (
+                    f"⚠️ **{s['stop_name']}** durağı için önümüzdeki 2 saat içinde "
+                    f"{'**' + route_code + '** hattında ' if route_code else ''}sefer bulunamadı.\n\n"
+                    f"🕐 Şu an saat **{now_str}**. Sefer saatleri bittiyse yarın sabah tekrar kontrol edin."
+                )
+                suggestions = ["Başka bir durak sor", "Bu duraktan geçen hatlar?"]
+        else:
+            reply = (
+                "⏱️ **Sefer Saati Sorgulama:**\n\n"
+                "Hangi durağı sorduğunuzu anlayamadım. Lütfen durak adını da belirtin.\n\n"
+                "Örnekler:\n"
+                "• *'Balıklı durağında S01 ne zaman gelir?'*\n"
+                "• *'Karataş'ta bir sonraki sefer kaç dakika sonra?'*\n"
+                "• *'Gatem durağından T1 ne zaman kalkıyor?'*"
+            )
+            suggestions = ["Balıklı'da S01 ne zaman gelir?",
+                           "Karataş'ta bir sonraki sefer ne zaman?",
+                           "Gatem'den T1 ne zaman kalkıyor?"]
+
+    # ============================================================
+    # INTENT 6: Durak arama / durak nerede?
+    # ============================================================
+    elif any(w in msg for w in ["durak", "nerede", "konum", "nereye", "yakin"]) and \
+         not any(w in msg for w in ["ne zaman", "gelir", "sefer", "hangi hat"]):
+
+        stop_name_guess = re.sub(r'(durak|nerede|konum|nereye|yakin|duragi|var mi)', '', msg).strip(" ?,.!")
+
+        found_stops = []
+        if len(stop_name_guess) > 2:
+            found_stops = _find_stops_by_name(stop_name_guess, max_results=5)
+
+        if found_stops:
+            stop_lines = "\n".join([
+                f"• **{s['stop_name']}** (#{s['stop_id']}) — "
+                f"[{s['lat']:.5f}, {s['lng']:.5f}]"
+                for s in found_stops
+            ])
+            reply = (
+                f"📍 '{stop_name_guess}' ile ilgili bulunan duraklar:\n\n"
+                f"{stop_lines}\n\n"
+                f"🗺️ Harita sekmesinden bu durağa tıklayarak geçen hatları görebilirsiniz."
+            )
+            suggestions = [f"{found_stops[0]['stop_name']} durağından hangi hatlar geçer?",
+                           f"{found_stops[0]['stop_name']} durağında sefer saatleri?",
+                           "Başka durak ara"]
+        else:
+            reply = (
+                "📍 **Durak Arama:**\n\n"
+                "Aradığınız durağı bulamadım. Lütfen durak adını daha açık yazın.\n\n"
+                "Örnekler: *Balıklı*, *Karataş*, *Gazikent*, *Üniversite*"
+            )
+            suggestions = ["Balıklı durağı nerede?", "Karataş durağı nerede?",
+                           "Üniversite durağı nerede?"]
+
+    # ============================================================
+    # INTENT 7: Tramvay bilgisi
+    # ============================================================
+    elif any(w in msg for w in ["tramvay", "tram", "t1", "t2", "t3"]):
+        reply = (
+            "🚊 **Gaziantep Tramvay Hatları:**\n\n"
+            "• **T1** — İbni Sina → Gar *(Kırmızı Hat)*\n"
+            "  Karataş, Üniversite, Tıp Fakültesi, Binevler, GAR güzergahı\n\n"
+            "• **T2** — Adliye → Gar *(Yeşil Hat)*\n"
+            "  Adliye, Güvenevler, Olimpik Havuz, 15 Temmuz, GAR güzergahı\n\n"
+            "• **T3** — Adliye → Burç *(Mavi Hat)*\n"
+            "  Adliye, Üniversite Aktarma, Burç Kavşağı güzergahı\n\n"
+            "⚡ Tramvay trafikten bağımsız çalışır — pik saatlerde en hızlı seçenektir!\n"
+            "♿ Tüm tramvay durakları tekerlekli sandalye erişimlidir."
+        )
+        suggestions = ["T1 tramvayı ne zaman gelir?",
+                       "T1 hangi durakları geçer?",
+                       "Tramvay mı otobüs mü daha hızlı?"]
+
+    # ============================================================
+    # INTENT 8: Gaziray / GR01
+    # ============================================================
+    elif any(w in msg for w in ["gaziray", "gr01", "ray", "metro", "hafif ray"]):
+        reply = (
+            "🚆 **Gaziray (GR01) — Başpınar-Taşlıca Hattı:**\n\n"
+            "Gaziantep'in hafif raylı sistemidir.\n\n"
+            "**Güzergah:** Başpınar → OSB3 → OSB4 → Dülük → Stadyum →\n"
+            "Beylerbeyi → Fıstıklık → Selimiye → Adliye → GAR → Göllüce → Seyrantepe → Taşlıca\n\n"
+            "• **Başpınar → GAR:** ~28 dakika\n"
+            "• Adliye'de T2/T3 tramvayına aktarma yapılabilir\n"
+            "• GAR'da T1/T2 tramvayına aktarma yapılabilir"
+        )
+        suggestions = ["GR01 ne zaman gelir?",
+                       "Adliye'de aktarma nasıl yapılır?",
+                       "T1 tramvayı ile nasıl aktarma yapılır?"]
+
+    # ============================================================
+    # INTENT 9: CO2 / Çevre
+    # ============================================================
+    elif any(w in msg for w in ["co2", "emisyon", "karbon", "cevre", "yesil", "agac", "tasarruf", "kirlilik"]):
+        reply = (
+            "🌿 **CO2 & Çevre Tasarrufu:**\n\n"
+            "Toplu taşımayla seyahat ederek önemli çevresel tasarruf yaparsınız:\n\n"
+            "| Araç | CO2 (kg/km) |\n|------|-------------|\n"
+            "| 🚃 Tramvay | ~0.04 |\n"
+            "| ⚡ EV Otobüs | 0.00 |\n"
+            "| 🚌 Belediye Otobüsü | ~0.28 |\n"
+            "| 🚗 Özel Araç | ~0.22 |\n\n"
+            "📊 **CO2 Karşılaştırıcı** sekmesinden iki durak arasındaki farkı hesaplayabilirsiniz!"
+        )
+        suggestions = ["CO2 nasıl hesaplanır?", "GaziBis nedir?", "Tramvay mı otobüs mü daha çevreci?"]
+
+    # ============================================================
+    # INTENT 10: GaziBis
+    # ============================================================
+    elif any(w in msg for w in ["gazibis", "bisiklet", "kiral", "gazi bis", "bike"]):
+        reply = (
+            "🚲 **GaziBis Akıllı Bisiklet Sistemi:**\n\n"
+            "Gaziantep'in paylaşımlı elektrikli bisiklet sistemi.\n\n"
+            "📌 **Mevcut İstasyonlar:**\n"
+            "• Masal Parkı İstasyonu — 14 bisiklet mevcut\n"
+            "• Gaziantep Üniversitesi — 18 bisiklet mevcut\n"
+            "• Demokrasi Meydanı — 10 bisiklet mevcut\n"
+            "• Gaziantep Gar — 8 bisiklet mevcut\n\n"
+            "🗺️ Harita sekmesinde **GaziBis İstasyonları** butonuna tıklayarak tüm noktaları ve\n"
+            "mevcut bisiklet sayılarını görebilirsiniz."
+        )
+        suggestions = ["En yakın GaziBis istasyonu?", "GaziBis ücreti ne kadar?", "CO2 tasarrufu?"]
+
+    # ============================================================
+    # INTENT 11: Otopark
+    # ============================================================
+    elif any(w in msg for w in ["otopark", "park yeri", "araç park", "park"]):
+        reply = (
+            "🅿️ **Gaziantep Akıllı Otopark Bilgileri:**\n\n"
+            "• **Sanko Park AVM Katlı Otopark** — 342 boş yer (Ücretsiz ilk 3 saat)\n"
+            "• **15 Temmuz Demokrasi Meydanı Yeraltı** — 84 boş yer (25 TL/saat)\n"
+            "• **Gazi Muhtar Paşa Katlı Otopark** — 156 boş yer (20 TL/saat)\n"
+            "• **Gaziantep Gar Katlı Otopark** — Mevcut\n\n"
+            "📋 **Rezervasyon için:** Harita sekmesi → Otopark Göster → Rezervasyon Yap"
+        )
+        suggestions = ["Otopark rezervasyonu nasıl yapılır?", "Ücretsiz otopark nerede?"]
+
+    # ============================================================
+    # INTENT 12: Ücret / Tarife
+    # ============================================================
+    elif any(w in msg for w in ["ucret", "fiyat", "bilet", "kart", "para", "kaç tl", "gazicard"]):
+        reply = (
+            "💳 **Ücret & Tarife Bilgileri:**\n\n"
+            "• **GaziCard** ile tüm toplu taşıma araçlarında entegre ödeme\n"
+            "• Aktarmalı yolculuklarda **indirimli tarife** uygulanır\n"
+            "• **Öğrenci kartı** ile önemli indirim\n"
+            "• **65 yaş üstü ve engelli** vatandaşlar ücretsiz/indirimli yararlanır\n\n"
+            "📌 Güncel tarife için **Gaziulaş** resmi web sitesini ziyaret edebilirsiniz."
+        )
         suggestions = ["GaziCard nedir?", "Öğrenci indirimi var mı?", "Aktarma ücreti?"]
 
-    # Yeni durak talebi
-    elif any(w in msg for w in ["yeni durak", "durak ekle", "talep", "istek", "sikayet", "öneri", "oneri"]):
-        reply = "📝 **Yeni Durak Talebi Oluşturma:**\n\n" \
-                "Mahallenizde eksik olduğunu düşündüğünüz bir durak için kolayca talep oluşturabilirsiniz!\n\n" \
-                "📌 **Adımlar:**\n" \
-                "1. **Güzergah & Hat** sekmesine gidin\n" \
-                "2. Sayfanın alt kısmındaki **'Yeni Durak Talebi Oluştur'** butonuna tıklayın\n" \
-                "3. Hat kodunu seçin ve önerilen durak bilgilerini girin\n" \
-                "4. Harita üzerinden konumu pinleyin\n" \
-                "5. **Gönder** butonuna tıklayın — talebiniz sisteme kaydedilir!\n\n" \
-                "📊 Tüm talepler **Veri & AI** sekmesindeki kayıt defterinde görüntülenebilir ve CSV olarak indirilebilir."
-        suggestions = ["Talep durumunu nasıl takip ederim?", "CO2 hesapla", "GaziBis nedir?"]
+    # ============================================================
+    # INTENT 13: Yeni durak talebi
+    # ============================================================
+    elif any(w in msg for w in ["yeni durak", "durak ekle", "talep", "istek", "sikayet", "oneri"]):
+        reply = (
+            "📝 **Yeni Durak Talebi Oluşturma:**\n\n"
+            "1. **'Yeni Durak Talebi'** sekmesine gidin\n"
+            "2. Hat kodunu seçin\n"
+            "3. Harita üzerinden konum pinleyin\n"
+            "4. Açıklama yazın ve gönderin!\n\n"
+            "Talebiniz sisteme kaydedilir ve yetkililere iletilir."
+        )
+        suggestions = ["Hangi hat için talep oluşturabilirim?", "CO2 hesapla", "GaziBis nedir?"]
 
-    # AI / Yapay Zeka sorusu
-    elif any(w in msg for w in ["yapay zeka", "ai", "akilli", "makine ogrenmesi", "ml", "tahmin", "model"]):
-        reply = "🤖 **DATransport AI Sistemi:**\n\n" \
-                "Bu platform, Gaziantep ulaşım verilerini analiz eden yapay zeka modelleri kullanmaktadır:\n\n" \
-                "• **Rota Öneri Motoru** — Mesafe, saat ve trafik yoğunluğuna göre en iyi ulaşım aracını önerir\n" \
-                "• **CO2 Hesaplama Modeli** — GTFS veri setiyle beslenmiş gerçek durak mesafelerine dayalı\n" \
-                "• **Makine Öğrenimi Paneli** — Veri & AI sekmesinde model başarım metrikleri (R², MAE) görülebilir\n\n" \
-                "📊 **Veri & AI** sekmesine giderek tüm CSV veri setlerini indirebilir ve model sonuçlarını inceleyebilirsiniz."
-        suggestions = ["Rota öner", "CO2 hesapla", "Veri setlerini indir"]
-
-    # Uygulama / Nasıl kullanırım sorusu
-    elif any(w in msg for w in ["nasil", "nasil kullan", "uygulama", "ne yapabilir", "ozellik", "fonksiyon", "sekme", "tab"]):
-        reply = "📱 **DATransport Uygulama Rehberi:**\n\n" \
-                "Uygulamada **7 ana sekme** bulunmaktadır:\n\n" \
-                "1. 🗺️ **Harita & Canlı Takip** — Duraklar, hatlar, GaziBis, otopark\n" \
-                "2. 🚌 **Güzergah & Hat** — Tüm hatları listele, durak ara, sefer saatlerini gör\n" \
-                "3. 🚲 **GaziBis Kiralama** — Elektrikli bisiklet kiralama & iade\n" \
-                "4. 🅿️ **Akıllı Otopark** — Otopark görüntüle & rezerve et\n" \
-                "5. ♿ **Erişilebilirlik** — Engelli dostu duraklar ve hizmetler\n" \
-                "6. 📊 **CO2 Karşılaştırıcı** — İki durak arası emisyon analizi\n" \
-                "7. 🤖 **Veri & AI** — Veri setleri, ML paneli, CSV indirmeler"
-        suggestions = ["CO2 hesapla", "GaziBis nedir?", "Yeni durak talebi oluştur"]
-
-    # Teşekkür
-    elif any(w in msg for w in ["tesekkur", "sagol", "sagolun", "eyvallah", "super", "mukemmel", "harika", "tamam", "anladim"]):
-        reply = "🙏 Rica ederim! Başka bir konuda yardımcı olabilir miyim?\n\n" \
-                "Gaziantep'te her seyahatinizde **DATransport AI Asistanı** yanınızda! 🚃✨"
+    # ============================================================
+    # INTENT 14: Teşekkür
+    # ============================================================
+    elif any(w in msg for w in ["tesekkur", "sagol", "sagolun", "eyvallah",
+                                 "super", "mukemmel", "harika", "tamam", "anladim", "eyv"]):
+        reply = "🙏 Rica ederim! Başka yardımcı olabileceğim bir konu var mı?\n\nGaziantep'te her seyahatinizde yanınızdayım! 🚃✨"
         suggestions = ["Yeni soru sor", "CO2 hesapla", "Hat sorgula"]
 
-    # Bilinmeyen / Genel soru
-    else:
-        # Anahtar kelime bulunamadıysa yönlendirme yap
-        reply = "🤔 Sorunuzu tam olarak anlayamadım. Gaziantep ulaşımı hakkında şu konularda yardımcı olabilirim:\n\n" \
-                "• 🚌 **Hat & güzergah bilgileri** — 'B01 hattı nereye gider?'\n" \
-                "• 📍 **Durak sorgulama** — 'Karataş durağı nerede?'\n" \
-                "• 🌿 **CO2 tasarrufu** — 'Tramvay mı otobüs mü daha çevreci?'\n" \
-                "• ⏱️ **Seyahat süresi** — 'Kaç dakika sürer?'\n" \
-                "• 🚲 **GaziBis** — 'Bisiklet kiralama nasıl?'\n" \
-                "• 🅿️ **Otopark** — 'Park yeri var mı?'\n\n" \
-                "Lütfen sorunuzu yeniden yazabilir misiniz?"
-        suggestions = ["Hangi hattı kullansam?", "CO2 hesapla", "GaziBis nedir?", "Otopark nerede?"]
+    # ============================================================
+    # INTENT 15: Erişilebilirlik
+    # ============================================================
+    elif any(w in msg for w in ["engelli", "tekerlekli", "erisim", "goreme", "isitme"]):
+        reply = (
+            "♿ **Erişilebilirlik Bilgileri:**\n\n"
+            "• Tüm tramvay durakları **alçak platform** ve **tekerlekli sandalye erişimli**\n"
+            "• Körüklü otobüslerde **rampa sistemi** mevcut\n"
+            "• Kilit duraklarda **sesli yönlendirme** sistemi aktif\n\n"
+            "🗺️ Harita sekmesindeki **Erişilebilirlik Hizmetleri** katmanını açabilirsiniz."
+        )
+        suggestions = ["Erişilebilir duraklar nerede?", "Tramvay erişilebilir mi?"]
 
-    # Durak istatistiği ekle
-    total_stops = len(df_stops) if df_stops is not None else 1500
-    total_routes = len(df_routes) if df_routes is not None else 85
+    # ============================================================
+    # INTENT 16: Genel / Bilinmeyen
+    # ============================================================
+    else:
+        # Son çare: sadece hat kodu varsa güzergah ver
+        route_code = _parse_route_code_from_msg(msg)
+        if route_code:
+            meta, stops_list, _ = gtfs_store.get_route_details(route_code)
+            if meta and stops_list:
+                first_stop = stops_list[0]['stop_name'] if stops_list else "?"
+                last_stop  = stops_list[-1]['stop_name'] if stops_list else "?"
+                reply = (
+                    f"🚌 **{meta['route_name']}** hattı hakkında:\n\n"
+                    f"• **Güzergah:** {first_stop} → ... → {last_stop}\n"
+                    f"• **Toplam durak:** {len(stops_list)}\n\n"
+                    f"Ne öğrenmek istersiniz?"
+                )
+                suggestions = [f"{route_code} hangi durakları geçer?",
+                               f"{route_code} ne zaman gelir?",
+                               f"{route_code} nereden biner?"]
+            else:
+                reply = f"⚠️ **{route_code}** hattı bulunamadı. Lütfen hat kodunu kontrol edin."
+                suggestions = ["Tüm hatları listele", "S01 hattı nereye gider?"]
+        else:
+            reply = (
+                "🤔 Sorunuzu tam anlayamadım. Şu konularda yardımcı olabilirim:\n\n"
+                "• 🗺️ **Güzergah** — *'Karataş'tan üniversiteye nasıl giderim?'*\n"
+                "• 🚌 **Hat bilgisi** — *'S01 hattı hangi durakları geçer?'*\n"
+                "• ⏱️ **Sefer saati** — *'Balıklı'da S01 ne zaman gelir?'*\n"
+                "• 📍 **Durak arama** — *'Üniversite durağı nerede?'*\n"
+                "• 🚊 **Tramvay** — *'T1 hattı nereye gider?'*\n\n"
+                "Lütfen sorunuzu yeniden yazar mısınız?"
+            )
+            suggestions = ["Karataş'tan üniversiteye nasıl giderim?",
+                           "S01 hattı hangi durakları geçer?",
+                           "Balıklı'da sefer saatleri?",
+                           "T1 tramvayı nereye gider?"]
+
+    total_stops  = len(df_stops)  if df_stops  is not None else 2942
+    total_routes = len(df_routes) if df_routes is not None else 147
 
     return jsonify({
         "success": True,
@@ -1099,7 +1664,7 @@ def ai_chat():
         "meta": {
             "total_stops": total_stops,
             "total_routes": total_routes,
-            "version": "DATransport AI v2.1"
+            "version": "DATransport AI v3.0 – GTFS Powered"
         }
     })
 

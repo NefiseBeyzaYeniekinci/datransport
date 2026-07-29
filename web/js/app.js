@@ -2393,11 +2393,23 @@ function appendBotBubble(markdownText, suggestions) {
     // Öneri chip'lerini oluştur
     let chipsHtml = '';
     if (suggestions && suggestions.length > 0) {
-        const chips = suggestions.map(s =>
-            `<button class="ai-suggestion-chip" onclick="sendAISuggestion('${escapeAttr(s)}')">${escapeHtml(s)}</button>`
-        ).join('');
+        const chips = suggestions.map(s => {
+            // Emoji prefix otomatik ekle
+            let icon = '💬';
+            if (s.includes('ne zaman') || s.includes('sefer') || s.includes('saat') || s.includes('dakika')) icon = '⏱️';
+            else if (s.includes('güzergah') || s.includes('durak') || s.includes('geçer') || s.includes('nereye')) icon = '🗺️';
+            else if (s.includes('CO2') || s.includes('co2') || s.includes('karbon') || s.includes('çevreci')) icon = '🌿';
+            else if (s.includes('GaziBis') || s.includes('bisiklet')) icon = '🚲';
+            else if (s.includes('otopark') || s.includes('park')) icon = '🅿️';
+            else if (s.includes('tramvay') || s.includes('T1') || s.includes('T2') || s.includes('T3')) icon = '🚊';
+            else if (s.includes('hat') || s.includes('otobüs') || s.includes('S0') || s.includes('B0')) icon = '🚌';
+            return `<button class="ai-suggestion-chip" onclick="sendAISuggestion('${escapeAttr(s)}')">${icon} ${escapeHtml(s)}</button>`;
+        }).join('');
         chipsHtml = `<div class="ai-suggestions-wrap" style="padding-left:0;margin-top:8px;">${chips}</div>`;
     }
+
+    // Sefer saati formatlaması
+    let processedText = markdownToHtml(markdownText);
 
     row.innerHTML = `
         <div class="ai-avatar">🤖</div>
@@ -2439,10 +2451,10 @@ function clearAIChat() {
             </div>
         </div>
         <div class="ai-suggestions-wrap">
-            <button class="ai-suggestion-chip" onclick="sendAISuggestion('Hangi hattı kullansam?')">🚌 Hangi hattı kullansam?</button>
-            <button class="ai-suggestion-chip" onclick="sendAISuggestion('CO2 tasarrufu nasıl hesaplanır?')">🌿 CO2 hesaplama</button>
-            <button class="ai-suggestion-chip" onclick="sendAISuggestion('GaziBis nedir?')">🚲 GaziBis nedir?</button>
-            <button class="ai-suggestion-chip" onclick="sendAISuggestion('Otopark nerede?')">🅿️ Otopark</button>
+            <button class="ai-suggestion-chip" onclick="sendAISuggestion(&quot;Karataş&apos;tan üniversiteye nasıl giderim?&quot;)">🗺️ Karataş→Üniversite</button>
+            <button class="ai-suggestion-chip" onclick="sendAISuggestion('S01 hattı hangi durakları geçer?')">🚌 S01 güzergahı</button>
+            <button class="ai-suggestion-chip" onclick="sendAISuggestion('T1 tramvay hattı nereye gider?')">🚊 T1 tramvay</button>
+            <button class="ai-suggestion-chip" onclick="sendAISuggestion('GaziBis nedir?')">🚲 GaziBis</button>
         </div>`;
 }
 
