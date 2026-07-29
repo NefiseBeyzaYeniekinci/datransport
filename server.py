@@ -936,9 +936,20 @@ def _find_stops_by_name(query, max_results=8):
     if not gtfs_store.is_loaded or gtfs_store.stops_df is None:
         return results
     q = _tr_norm(query)
+    
+    # Özel eşleştirmeler (Üniversite <-> Gaün)
+    synonyms = [q]
+    if 'universite' in q or 'uni' in q:
+        synonyms.append('gaun')
+    elif 'gaun' in q:
+        synonyms.append('universite')
+
     for _, row in gtfs_store.stops_df.iterrows():
         name = str(row.get('stop_name', ''))
-        if q in _tr_norm(name):
+        norm_name = _tr_norm(name)
+        
+        # Herhangi bir eşanlamlı kelime durak adında geçiyorsa ekle
+        if any(syn in norm_name for syn in synonyms):
             results.append({
                 'stop_id': str(row['stop_id']),
                 'stop_name': name,
@@ -1054,62 +1065,19 @@ def _get_next_departures(stop_id, route_code=None, limit=5):
 
 def _find_routes_between(origin_query, dest_query):
     """İki konum/durak arasında geçen ortak hatları bul."""
-    # Konum için alternatif arama terimleri
-    origin_aliases = [origin_query]
-    dest_aliases = [dest_query]
-
-    # Bilinen takma adlar
-    alias_map = {
-        "Gaziantep Üniversitesi": ["Gaun", "Universitesi", "Uygulama Oteli", "Gaziantep Uni"],
-        "Üniversite": ["Gaun", "Universitesi"],
-        "Karataş": ["Karatas", "Karataş"],
-        "Gatem": ["Gatem", "Kundura"],
-        "İstasyon": ["Istasyon", "Tren Gar"],
-        "Balıklı": ["Balikli"],
-        "Mavikent": ["Mavikent"],
-        "Beykent": ["Beykent"],
-        "Gazikent": ["Gazikent"],
-        "Adliye": ["Adliye"],
-        "Otogar": ["Otogar"],
-        "Şehir Hastanesi": ["Sehir Hastanesi", "Hastane"],
-        "Tıp Fakültesi": ["Tip Fak", "Tip Fakültesi"],
-    }
-    for key, aliases in alias_map.items():
-        if _tr_norm(key) in _tr_norm(origin_query):
-            origin_aliases.extend(aliases)
-        if _tr_norm(key) in _tr_norm(dest_query):
-            dest_aliases.extend(aliases)
-
-    # Her alias için dur ara
-    origin_stops = []
-    for alias in origin_aliases:
-        stops = _find_stops_by_name(alias, max_results=5)
-        for s in stops:
-            if s not in origin_stops:
-                origin_stops.append(s)
-        if len(origin_stops) >= 5:
-            break
-
-    dest_stops = []
-    for alias in dest_aliases:
-        stops = _find_stops_by_name(alias, max_results=5)
-        for s in stops:
-            if s not in dest_stops:
-                dest_stops.append(s)
-        if len(dest_stops) >= 5:
-            break
-
+    origin_stops = _find_stops_by_name(origin_query, max_results=10)
+    dest_stops   = _find_stops_by_name(dest_query,   max_results=10)
     if not origin_stops or not dest_stops:
         return [], origin_stops, dest_stops
 
     # Her duraktan geçen hatları bul, kesişim al
     origin_routes_set = set()
-    for s in origin_stops[:5]:
+    for s in origin_stops:
         for r in _get_routes_at_stop(s['stop_id']):
             origin_routes_set.add(r['code'])
 
     dest_routes_set = set()
-    for s in dest_stops[:5]:
+    for s in dest_stops:
         for r in _get_routes_at_stop(s['stop_id']):
             dest_routes_set.add(r['code'])
 
@@ -1189,35 +1157,21 @@ def ai_chat():
         dest_hint   = ""
 
         location_kws = {
-            "karatas": "Karataş",
-            "gazikent": "Gazikent",
-            "gatem": "Gatem",
-            "universite": "Gaziantep Üniversitesi",
-            "gaun": "Gaziantep Üniversitesi",
-            "uni ": "Gaziantep Üniversitesi",
-            "hastane": "Şehir Hastanesi",
-            "sehir hastanesi": "Şehir Hastanesi",
-            "otogar": "Otogar",
-            "istasyon": "İstasyon",
-            "gar ": "Gar",
-            "adliye": "Adliye",
-            "balikli": "Balıklı",
-            "mavikent": "Mavikent",
-            "beykent": "Beykent",
-            "ipekevler": "İpekevler",
-            "gibtuu": "Gibtü",
-            "gibtü": "Gibtü",
-            "oguzel": "Oğuzeli",
-            "onderr": "Önderbirlik",
-            "seyrantepe": "Seyrantepe",
-            "akkent": "Akkent",
-            "binevler": "Binevler",
-            "kuzey": "Kuzeyşehir",
-            "tip fak": "Tıp Fakültesi",
+            "karatas": "Karataş", "gazikent": "Gazikent", "gatem": "Gatem",
+            "universite": "Gaziantep Üniversitesi", "uni": "Üniversite",
+            "hastane": "Hastane", "sehir hastanesi": "Şehir Hastanesi",
+            "otogar": "Otogar", "istasyon": "İstasyon", "gar": "Gar",
+            "adliye": "Adliye", "balikli": "Balıklı", "mavikent": "Mavikent",
+            "beykent": "Beykent", "ipekevler": "İpekevler", "gibtü": "Gibtü",
+            "gibtuu": "Gibtü", "oguzel": "Oğuzeli", "onderr": "Önderbirlik",
+            "seyrantepe": "Seyrantepe", "akkent": "Akkent", "binevler": "Binevler",
+            "gaziosmanpasa": "Gaziosmanpaşa", "sahinbey": "Şahinbey",
+            "kuzeyşehir": "Kuzeyşehir", "kuzey": "Kuzeyşehir",
+            "tip fakultesi": "Tıp Fakültesi", "tip": "Tıp Fakültesi",
         }
         found_locs = []
         for kw, display in location_kws.items():
-            if kw in msg and display not in found_locs:
+            if kw in msg:
                 found_locs.append(display)
 
         if len(found_locs) >= 2:
@@ -1246,40 +1200,15 @@ def ai_chat():
                                f"{common_routes[0]} hangi durakları geçer?",
                                "Aktarma nasıl yapılır?"]
             else:
-                # Doğrudan hat yok — her iki noktadaki hatları ayrı göster
-                origin_routes = []
-                for s in (origin_stops or [])[:3]:
-                    for r in _get_routes_at_stop(s['stop_id']):
-                        if r['code'] not in [x['code'] for x in origin_routes]:
-                            origin_routes.append(r)
-
-                dest_routes = []
-                for s in (dest_stops or [])[:3]:
-                    for r in _get_routes_at_stop(s['stop_id']):
-                        if r['code'] not in [x['code'] for x in dest_routes]:
-                            dest_routes.append(r)
-
-                origin_list = ", ".join([f"**{r['code']}**" for r in origin_routes[:6]])
-                dest_list   = ", ".join([f"**{r['code']}**" for r in dest_routes[:6]])
-
-                # Tramvay varsa özellikle öner
-                tram_transfer = ""
-                all_orig_codes = {r['code'] for r in origin_routes}
-                all_dest_codes = {r['code'] for r in dest_routes}
-                if any(c in all_orig_codes for c in ['T1','T2','T3','GR01','S01','S04']):
-                    tram_transfer = "\n\n🚊 **Öneri:** Karataş'tan **S01** veya **S04** ile Gatem'e gidin, oradan üniversiteye ulaşan hatta aktarın."
-
                 reply = (
-                    f"🗺️ **{origin_hint} → {dest_hint}**\n\n"
-                    f"Bu güzergahta **tek hatla direkt gidiş** yok, ancak şöyle yapabilirsiniz:\n\n"
-                    f"📍 **{origin_hint}** bölgesindeki hatlar:\n{origin_list or 'Bulunamadı'}\n\n"
-                    f"📍 **{dest_hint}** bölgesindeki hatlar:\n{dest_list or 'Bulunamadı'}\n\n"
-                    f"💡 **Aktarma önerisi:** Bu iki bölgeden her ikisine de giden ortak bir noktada (örn. İstasyon, Gar veya merkezi bir durak) aktarma yapabilirsiniz."
-                    f"{tram_transfer}"
+                    f"🤔 **{origin_hint} → {dest_hint}** arasında doğrudan hat bulamadım.\n\n"
+                    "Bu güzergahta **aktarma** gerekiyor olabilir. Şunları deneyebilirsiniz:\n\n"
+                    "• Önce **İstasyon** veya **Gar** durağına gidin\n"
+                    "• Oradan hedefe yakın bir hata aktarın\n\n"
+                    "💡 Daha kesin bir güzergah için lütfen başlangıç ve bitiş durak adlarını tam yazın."
                 )
-                sug1 = origin_routes[0]['code'] + " hangi durakları geçer?" if origin_routes else "S01 hattı nereye gider?"
-                sug2 = dest_routes[0]['code']   + " hangi durakları geçer?" if dest_routes   else "T1 tramvay nereye gider?"
-                suggestions = [sug1, sug2, "T1 tramvay hattı nereye gider?"]
+                suggestions = ["Aktarma nasıl yapılır?", "T1 tramvay hattı nereye gider?",
+                               "S01 hattı hangi durakları geçer?"]
         else:
             reply = (
                 "🗺️ **Güzergah Önerisi:**\n\n"
