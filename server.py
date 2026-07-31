@@ -960,33 +960,42 @@ def _find_stops_by_name(query, max_results=8):
             break
     return results
 
+_stop_routes_cache = {}
+
 def _get_routes_at_stop(stop_id):
     """Belirli bir duraktan geçen hatları bul."""
+    sid = str(stop_id)
+    if sid in _stop_routes_cache:
+        return _stop_routes_cache[sid]
+        
     if not gtfs_store.is_loaded or gtfs_store.stop_times_df is None:
         return []
-    sid = str(stop_id)
+        
     st = gtfs_store.stop_times_df
     st_stop = st[st['stop_id'].astype(str) == sid]
     if st_stop.empty:
+        _stop_routes_cache[sid] = []
         return []
-    trip_ids = st_stop['trip_id'].unique()
+        
+    merged = pd.merge(st_stop, gtfs_store.trips_df, on='trip_id')
+    route_ids = merged['route_id'].unique()
+    
     routes = []
     seen = set()
-    if gtfs_store.trips_df is not None and gtfs_store.routes_df is not None:
-        trips_at_stop = gtfs_store.trips_df[gtfs_store.trips_df['trip_id'].isin(trip_ids)]
-        route_ids = trips_at_stop['route_id'].unique()
-        for rid in route_ids:
-            r_row = gtfs_store.routes_df[gtfs_store.routes_df['route_id'] == rid]
-            if not r_row.empty:
-                code = str(r_row.iloc[0].get('route_short_name', '')).strip()
-                name = str(r_row.iloc[0].get('route_long_name', '')).strip()
-                color = str(r_row.iloc[0].get('route_color', 'FF6600')).strip()
-                if not color.startswith('#'):
-                    color = '#' + color
-                if code and code not in seen:
-                    seen.add(code)
-                    routes.append({'code': code, 'name': name, 'color': color})
+    for rid in route_ids:
+        r_row = gtfs_store.routes_df[gtfs_store.routes_df['route_id'] == rid]
+        if not r_row.empty:
+            code = str(r_row.iloc[0].get('route_short_name', '')).strip()
+            name = str(r_row.iloc[0].get('route_long_name', '')).strip()
+            color = str(r_row.iloc[0].get('route_color', 'FF6600')).strip()
+            if not color.startswith('#'):
+                color = '#' + color
+            if code and code not in seen:
+                seen.add(code)
+                routes.append({'code': code, 'name': name, 'color': color})
+                
     routes.sort(key=lambda x: x['code'])
+    _stop_routes_cache[sid] = routes
     return routes
 
 def _get_next_departures(stop_id, route_code=None, limit=5):
@@ -1070,19 +1079,26 @@ def _find_routes_between(origin_query, dest_query):
     if not origin_stops or not dest_stops:
         return [], origin_stops, dest_stops
 
-    # Her duraktan geçen hatları bul, kesişim al
-    origin_routes_set = set()
-    for s in origin_stops:
-        for r in _get_routes_at_stop(s['stop_id']):
-            origin_routes_set.add(r['code'])
-
-    dest_routes_set = set()
-    for s in dest_stops:
-        for r in _get_routes_at_stop(s['stop_id']):
-            dest_routes_set.add(r['code'])
-
-    common = origin_routes_set & dest_routes_set
-    return sorted(common), origin_stops, dest_stops
+    s_ids = [str(s['stop_id']) for s in origin_stops]
+    e_ids = [str(e['stop_id']) for e in dest_stops]
+    
+    st = gtfs_store.stop_times_df
+    s_trips = pd.merge(st[st['stop_id'].astype(str).isin(s_ids)], gtfs_store.trips_df, on='trip_id')
+    e_trips = pd.merge(st[st['stop_id'].astype(str).isin(e_ids)], gtfs_store.trips_df, on='trip_id')
+    
+    s_routes = set(s_trips['route_id'].unique())
+    e_routes = set(e_trips['route_id'].unique())
+    
+    common_route_ids = s_routes & e_routes
+    common_codes = set()
+    for rid in common_route_ids:
+        r_row = gtfs_store.routes_df[gtfs_store.routes_df['route_id'] == rid]
+        if not r_row.empty:
+            code = str(r_row.iloc[0].get('route_short_name', '')).strip()
+            if code:
+                common_codes.add(code)
+                
+    return sorted(list(common_codes)), origin_stops, dest_stops
 
 def _parse_route_code_from_msg(msg):
     """Mesajdan hat kodunu çıkar (örn. B01, S01, T1, M14...)."""
