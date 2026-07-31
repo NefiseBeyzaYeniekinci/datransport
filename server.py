@@ -1227,12 +1227,13 @@ def route_planner():
                     ]
                     
                     try:
-                        coords_str = f"{start_lng},{start_lat};{float(s_stop['stop_lon'])},{float(s_stop['stop_lat'])};{float(e_stop['stop_lon'])},{float(e_stop['stop_lat'])};{end_lng},{end_lat}"
+                        coords_str = f"{float(s_stop['stop_lon'])},{float(s_stop['stop_lat'])};{float(e_stop['stop_lon'])},{float(e_stop['stop_lat'])}"
                         osrm_bus_url = f"http://router.project-osrm.org/route/v1/driving/{coords_str}?overview=full&geometries=geojson"
                         resp = requests.get(osrm_bus_url, timeout=2)
                         data = resp.json()
                         if data.get("code") == "Ok":
-                            geometry = data["routes"][0]["geometry"]["coordinates"]
+                            bus_geometry = data["routes"][0]["geometry"]["coordinates"]
+                            geometry = [[start_lng, start_lat]] + bus_geometry + [[end_lng, end_lat]]
                     except:
                         pass
                     
@@ -1287,14 +1288,16 @@ def route_planner():
                             calculate_haversine_distance(end_lat, end_lng, best_e_bike['lat'], best_e_bike['lng'])
             
             try:
-                coords_str = f"{start_lng},{start_lat};{best_s_bike['lng']},{best_s_bike['lat']};{best_e_bike['lng']},{best_e_bike['lat']};{end_lng},{end_lat}"
+                coords_str = f"{best_s_bike['lng']},{best_s_bike['lat']};{best_e_bike['lng']},{best_e_bike['lat']}"
                 osrm_bike_url = f"http://router.project-osrm.org/route/v1/bicycle/{coords_str}?overview=full&geometries=geojson"
                 resp = requests.get(osrm_bike_url, timeout=2)
                 data = resp.json()
                 if data.get("code") == "Ok":
-                    route = data["routes"][0]
-                    geometry = route["geometry"]["coordinates"]
-                    total_dist_km = route["distance"] / 1000.0
+                    bike_geometry = data["routes"][0]["geometry"]["coordinates"]
+                    geometry = [[start_lng, start_lat]] + bike_geometry + [[end_lng, end_lat]]
+                    total_dist_km = (calculate_haversine_distance(start_lat, start_lng, best_s_bike['lat'], best_s_bike['lng']) + 
+                                     (data["routes"][0]["distance"] / 1000.0) + 
+                                     calculate_haversine_distance(end_lat, end_lng, best_e_bike['lat'], best_e_bike['lng']))
             except:
                 pass
 
