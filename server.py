@@ -1219,6 +1219,23 @@ def route_planner():
                     co2_sav = (s_stop['dist_start'] + t['bus_dist'] + e_stop['dist_end']) * 0.22 - (t['bus_dist'] * 0.28)
                     if co2_sav < 0: co2_sav = 0
                     
+                    geometry = [
+                        [start_lng, start_lat],
+                        [float(s_stop['stop_lon']), float(s_stop['stop_lat'])],
+                        [float(e_stop['stop_lon']), float(e_stop['stop_lat'])],
+                        [end_lng, end_lat]
+                    ]
+                    
+                    try:
+                        coords_str = f"{start_lng},{start_lat};{float(s_stop['stop_lon'])},{float(s_stop['stop_lat'])};{float(e_stop['stop_lon'])},{float(e_stop['stop_lat'])};{end_lng},{end_lat}"
+                        osrm_bus_url = f"http://router.project-osrm.org/route/v1/driving/{coords_str}?overview=full&geometries=geojson"
+                        resp = requests.get(osrm_bus_url, timeout=2)
+                        data = resp.json()
+                        if data.get("code") == "Ok":
+                            geometry = data["routes"][0]["geometry"]["coordinates"]
+                    except:
+                        pass
+                    
                     options.append({
                         "id": f"transit_{i}",
                         "type": f"Toplu Taşıma ({t['route_code']})" if i == 0 else f"Alternatif: {t['route_code']}",
@@ -1227,19 +1244,15 @@ def route_planner():
                         "distance_km": round(s_stop['dist_start'] + t['bus_dist'] + e_stop['dist_end'], 2),
                         "co2_emission": round(t['bus_dist'] * 0.28, 2),
                         "co2_savings": round(co2_sav, 2),
-                        "geometry": [
-                            [start_lng, start_lat],
-                            [float(s_stop['stop_lon']), float(s_stop['stop_lat'])],
-                            [float(e_stop['stop_lon']), float(e_stop['stop_lat'])],
-                            [end_lng, end_lat]
-                        ],
+                        "geometry": geometry,
                         "details": f"{s_stop['stop_name']} durağına yürü, {t['route_code']} hattına bin, {e_stop['stop_name']} durağında in."
                     })
 
 
         # 3. GaziBis Rotası (Heuristik)
-        best_bike_option = None
         best_bike_score = 999999
+        best_s_bike = None
+        best_e_bike = None
         
         for s_bike in GAZIBIS_STATIONS:
             for e_bike in GAZIBIS_STATIONS:
@@ -1259,25 +1272,43 @@ def route_planner():
                     
                     if total_time < best_bike_score:
                         best_bike_score = total_time
-                        best_bike_option = {
-                            "id": "bike",
-                            "type": "GaziBis (Bisiklet)",
-                            "icon": "fa-bicycle",
-                            "duration_min": round(total_time),
-                            "distance_km": round(dist_to_start_bike + bike_dist + dist_from_end_bike, 2),
-                            "co2_emission": 0,
-                            "co2_savings": round((dist_to_start_bike + bike_dist + dist_from_end_bike) * 0.22, 2),
-                            "geometry": [
-                                [start_lng, start_lat],
-                                [s_bike['lng'], s_bike['lat']],
-                                [e_bike['lng'], e_bike['lat']],
-                                [end_lng, end_lat]
-                            ],
-                            "details": f"{s_bike['name']}'na yürü, bisiklet kirala, {e_bike['name']}'na sür."
-                        }
-                        
-        if best_bike_option:
-            options.append(best_bike_option)
+                        best_s_bike = s_bike
+                        best_e_bike = e_bike
+
+        if best_s_bike and best_e_bike:
+            geometry = [
+                [start_lng, start_lat],
+                [best_s_bike['lng'], best_s_bike['lat']],
+                [best_e_bike['lng'], best_e_bike['lat']],
+                [end_lng, end_lat]
+            ]
+            total_dist_km = calculate_haversine_distance(start_lat, start_lng, best_s_bike['lat'], best_s_bike['lng']) + \
+                            calculate_haversine_distance(best_s_bike['lat'], best_s_bike['lng'], best_e_bike['lat'], best_e_bike['lng']) * 1.2 + \
+                            calculate_haversine_distance(end_lat, end_lng, best_e_bike['lat'], best_e_bike['lng'])
+            
+            try:
+                coords_str = f"{start_lng},{start_lat};{best_s_bike['lng']},{best_s_bike['lat']};{best_e_bike['lng']},{best_e_bike['lat']};{end_lng},{end_lat}"
+                osrm_bike_url = f"http://router.project-osrm.org/route/v1/bicycle/{coords_str}?overview=full&geometries=geojson"
+                resp = requests.get(osrm_bike_url, timeout=2)
+                data = resp.json()
+                if data.get("code") == "Ok":
+                    route = data["routes"][0]
+                    geometry = route["geometry"]["coordinates"]
+                    total_dist_km = route["distance"] / 1000.0
+            except:
+                pass
+
+            options.append({
+                "id": "bike",
+                "type": "GaziBis (Bisiklet)",
+                "icon": "fa-bicycle",
+                "duration_min": round(best_bike_score),
+                "distance_km": round(total_dist_km, 2),
+                "co2_emission": 0,
+                "co2_savings": round(total_dist_km * 0.22, 2),
+                "geometry": geometry,
+                "details": f"{best_s_bike['name']}'na yürü, bisiklet kirala, {best_e_bike['name']}'na sür."
+            })
 
         # Süreye göre sırala
         options.sort(key=lambda x: x['duration_min'])
