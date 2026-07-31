@@ -32,6 +32,9 @@
                 <button class="nav-tab active" onclick="switchTab('tab-map')">
                     <i class="fa-solid fa-map-location-dot"></i> Hatlar & Harita
                 </button>
+                <button class="nav-tab" onclick="switchTab('tab-route-planner')">
+                    <i class="fa-solid fa-route" style="color: #8b5cf6;"></i> Rota Planlayıcı
+                </button>
                 <button class="nav-tab" onclick="switchTab('tab-traffic')">
                     <i class="fa-solid fa-traffic-light" style="color: #ef4444;"></i> Canlı Trafik Haritası
                 </button>
@@ -118,6 +121,42 @@
                     </div>
 
                     <div id="map-container"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB YENİ: ROTA PLANLAYICI -->
+        <section id="tab-route-planner" class="tab-content">
+            <div class="map-layout">
+                <div class="sidebar-panel" style="padding: 16px; display: flex; flex-direction: column; gap: 16px; background: #f8fafc;">
+                    <div style="font-size: 1.2rem; font-weight: 900; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                        <i class="fa-solid fa-route" style="color: #8b5cf6;"></i> Akıllı Yolculuk Planlayıcı
+                    </div>
+                    <div style="font-size: 0.85rem; color: #64748b;">Harita üzerinden Nereden ve Nereye gideceğinizi seçin.</div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                        <div class="search-input-wrapper">
+                            <i class="fa-solid fa-location-dot" style="color: #3b82f6;"></i>
+                            <input type="text" id="route-start-input" class="search-input" placeholder="Nereden (Haritadan Seçin)" readonly style="background: #e2e8f0; cursor: pointer;">
+                        </div>
+                        <div class="search-input-wrapper">
+                            <i class="fa-solid fa-location-dot" style="color: #ef4444;"></i>
+                            <input type="text" id="route-end-input" class="search-input" placeholder="Nereye (Haritadan Seçin)" readonly style="background: #e2e8f0; cursor: pointer;">
+                        </div>
+                        <button onclick="calculateRoute()" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(139,92,246,0.3); margin-top: 8px;">
+                            <i class="fa-solid fa-location-arrow"></i> Rota Bul
+                        </button>
+                    </div>
+
+                    <div id="route-results-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px; overflow-y: auto; flex: 1;">
+                        <div id="route-placeholder" style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 20px;">
+                            Haritaya tıklayarak 1. ve 2. noktaları belirleyin.
+                        </div>
+                    </div>
+                </div>
+
+                <div style="position: relative; flex: 1;">
+                    <div id="planner-map-container" style="width: 100%; height: 100%;"></div>
                 </div>
             </div>
         </section>

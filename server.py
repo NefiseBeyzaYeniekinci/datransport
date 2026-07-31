@@ -1101,6 +1101,150 @@ def _parse_route_code_from_msg(msg):
     return None
 
 # ============================================================
+#  MULTIMODAL ROTA PLANLAYICI
+# ============================================================
+
+@app.route("/api/route_planner", methods=["GET"])
+def route_planner():
+    try:
+        start_lat = float(request.args.get("start_lat"))
+        start_lng = float(request.args.get("start_lng"))
+        end_lat = float(request.args.get("end_lat"))
+        end_lng = float(request.args.get("end_lng"))
+
+        options = []
+
+        # 1. Yürüyüş Rotası (OSRM)
+        try:
+            osrm_url = f"http://router.project-osrm.org/route/v1/foot/{start_lng},{start_lat};{end_lng},{end_lat}?overview=full&geometries=geojson"
+            resp = requests.get(osrm_url, timeout=5)
+            data = resp.json()
+            if data.get("code") == "Ok":
+                route = data["routes"][0]
+                dist_km = route["distance"] / 1000.0
+                duration_min = route["duration"] / 60.0
+                
+                options.append({
+                    "id": "walk",
+                    "type": "Yürüyüş",
+                    "icon": "fa-person-walking",
+                    "duration_min": round(duration_min),
+                    "distance_km": round(dist_km, 2),
+                    "co2_emission": 0,
+                    "co2_savings": round(dist_km * 0.22, 2),
+                    "geometry": route["geometry"]["coordinates"], # [[lng, lat], ...]
+                    "details": f"Tamamen yürüyüş rotası ({round(dist_km, 2)} km)"
+                })
+        except Exception as e:
+            print("OSRM Yürüyüş hatası:", e)
+
+        # 2. Toplu Taşıma Rotası (Heuristik)
+        if gtfs_store.is_loaded and gtfs_store.stops_df is not None:
+            df_s = gtfs_store.stops_df.copy()
+            df_s['dist_start'] = df_s.apply(lambda row: calculate_haversine_distance(start_lat, start_lng, float(row['stop_lat']), float(row['stop_lon'])), axis=1)
+            df_s['dist_end'] = df_s.apply(lambda row: calculate_haversine_distance(end_lat, end_lng, float(row['stop_lat']), float(row['stop_lon'])), axis=1)
+
+            start_stops = df_s[df_s['dist_start'] < 1.5].nsmallest(10, 'dist_start')
+            end_stops = df_s[df_s['dist_end'] < 1.5].nsmallest(10, 'dist_end')
+
+            best_transit_option = None
+            best_score = 999999
+
+            for _, s_stop in start_stops.iterrows():
+                for _, e_stop in end_stops.iterrows():
+                    s_id = s_stop['stop_id']
+                    e_id = e_stop['stop_id']
+
+                    s_routes = [r['code'] for r in _get_routes_at_stop(s_id)]
+                    e_routes = [r['code'] for r in _get_routes_at_stop(e_id)]
+
+                    common_routes = set(s_routes) & set(e_routes)
+                    if common_routes:
+                        route_code = list(common_routes)[0]
+                        walk_start_min = (s_stop['dist_start'] / 5.0) * 60
+                        walk_end_min = (e_stop['dist_end'] / 5.0) * 60
+                        
+                        bus_dist = calculate_haversine_distance(s_stop['stop_lat'], s_stop['stop_lon'], e_stop['stop_lat'], e_stop['stop_lon']) * 1.3
+                        bus_time_min = (bus_dist / 20.0) * 60
+
+                        total_time = walk_start_min + bus_time_min + walk_end_min
+
+                        if total_time < best_score:
+                            best_score = total_time
+                            best_transit_option = {
+                                "id": "transit",
+                                "type": f"Toplu Taşıma ({route_code})",
+                                "icon": "fa-bus",
+                                "duration_min": round(total_time),
+                                "distance_km": round(s_stop['dist_start'] + bus_dist + e_stop['dist_end'], 2),
+                                "co2_emission": round(bus_dist * 0.28, 2),
+                                "co2_savings": round((s_stop['dist_start'] + bus_dist + e_stop['dist_end']) * 0.22 - (bus_dist * 0.28), 2),
+                                "geometry": [
+                                    [start_lng, start_lat],
+                                    [float(s_stop['stop_lon']), float(s_stop['stop_lat'])],
+                                    [float(e_stop['stop_lon']), float(e_stop['stop_lat'])],
+                                    [end_lng, end_lat]
+                                ],
+                                "details": f"{s_stop['stop_name']} durağına yürü, {route_code} hattına bin, {e_stop['stop_name']} durağında in."
+                            }
+
+            if best_transit_option:
+                if best_transit_option["co2_savings"] < 0:
+                    best_transit_option["co2_savings"] = 0
+                options.append(best_transit_option)
+
+        # 3. GaziBis Rotası (Heuristik)
+        best_bike_option = None
+        best_bike_score = 999999
+        
+        for s_bike in GAZIBIS_STATIONS:
+            for e_bike in GAZIBIS_STATIONS:
+                if s_bike['id'] == e_bike['id']: continue
+                
+                dist_to_start_bike = calculate_haversine_distance(start_lat, start_lng, s_bike['lat'], s_bike['lng'])
+                dist_from_end_bike = calculate_haversine_distance(end_lat, end_lng, e_bike['lat'], e_bike['lng'])
+                
+                if dist_to_start_bike < 2.0 and dist_from_end_bike < 2.0:
+                    bike_dist = calculate_haversine_distance(s_bike['lat'], s_bike['lng'], e_bike['lat'], e_bike['lng']) * 1.2
+                    
+                    walk_start_min = (dist_to_start_bike / 5.0) * 60
+                    walk_end_min = (dist_from_end_bike / 5.0) * 60
+                    bike_time_min = (bike_dist / 15.0) * 60
+                    
+                    total_time = walk_start_min + bike_time_min + walk_end_min
+                    
+                    if total_time < best_bike_score:
+                        best_bike_score = total_time
+                        best_bike_option = {
+                            "id": "bike",
+                            "type": "GaziBis (Bisiklet)",
+                            "icon": "fa-bicycle",
+                            "duration_min": round(total_time),
+                            "distance_km": round(dist_to_start_bike + bike_dist + dist_from_end_bike, 2),
+                            "co2_emission": 0,
+                            "co2_savings": round((dist_to_start_bike + bike_dist + dist_from_end_bike) * 0.22, 2),
+                            "geometry": [
+                                [start_lng, start_lat],
+                                [s_bike['lng'], s_bike['lat']],
+                                [e_bike['lng'], e_bike['lat']],
+                                [end_lng, end_lat]
+                            ],
+                            "details": f"{s_bike['name']}'na yürü, bisiklet kirala, {e_bike['name']}'na sür."
+                        }
+                        
+        if best_bike_option:
+            options.append(best_bike_option)
+
+        # Süreye göre sırala
+        options.sort(key=lambda x: x['duration_min'])
+        return jsonify({"success": True, "options": options})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)})
+
+# ============================================================
 #  ANA CHATBOT ENDPOINT
 # ============================================================
 

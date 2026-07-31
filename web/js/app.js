@@ -208,6 +208,127 @@ async function downloadKaggleDatasetCSV() {
     }
 }
 
+// MULTIMODAL ROUTE PLANNER VARIABLES
+let plannerMap = null;
+let plannerStartMarker = null;
+let plannerEndMarker = null;
+let plannerStartCoords = null;
+let plannerEndCoords = null;
+let plannerRouteLines = [];
+
+function initPlannerMap() {
+    if (plannerMap) return;
+    const gaziantepCoords = [37.0662, 37.3781];
+    plannerMap = L.map('planner-map-container').setView(gaziantepCoords, 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    }).addTo(plannerMap);
+
+    plannerMap.on('click', (e) => {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
+        if (!plannerStartCoords) {
+            plannerStartCoords = {lat, lng};
+            if(plannerStartMarker) plannerMap.removeLayer(plannerStartMarker);
+            plannerStartMarker = L.marker([lat, lng], {icon: L.divIcon({className: 'custom-div-icon', html: "<div style='background-color:#3b82f6;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);'></div>"})}).addTo(plannerMap);
+            document.getElementById('route-start-input').value = `Seçildi: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        } else if (!plannerEndCoords) {
+            plannerEndCoords = {lat, lng};
+            if(plannerEndMarker) plannerMap.removeLayer(plannerEndMarker);
+            plannerEndMarker = L.marker([lat, lng], {icon: L.divIcon({className: 'custom-div-icon', html: "<div style='background-color:#ef4444;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);'></div>"})}).addTo(plannerMap);
+            document.getElementById('route-end-input').value = `Seçildi: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        } else {
+            // Reset
+            plannerStartCoords = {lat, lng};
+            plannerEndCoords = null;
+            if(plannerStartMarker) plannerMap.removeLayer(plannerStartMarker);
+            if(plannerEndMarker) plannerMap.removeLayer(plannerEndMarker);
+            clearPlannerRoutes();
+            plannerStartMarker = L.marker([lat, lng], {icon: L.divIcon({className: 'custom-div-icon', html: "<div style='background-color:#3b82f6;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);'></div>"})}).addTo(plannerMap);
+            document.getElementById('route-start-input').value = `Seçildi: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            document.getElementById('route-end-input').value = "";
+            document.getElementById('route-results-container').innerHTML = '<div id="route-placeholder" style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 20px;">Haritaya tıklayarak 1. ve 2. noktaları belirleyin.</div>';
+        }
+    });
+}
+
+function clearPlannerRoutes() {
+    plannerRouteLines.forEach(l => plannerMap.removeLayer(l));
+    plannerRouteLines = [];
+}
+
+async function calculateRoute() {
+    if (!plannerStartCoords || !plannerEndCoords) {
+        alert("Lütfen harita üzerinden başlangıç ve bitiş noktalarını seçin.");
+        return;
+    }
+    
+    document.getElementById('route-results-container').innerHTML = '<div style="text-align:center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:#8b5cf6;"></i><br>Rotalar hesaplanıyor...</div>';
+    
+    try {
+        const res = await fetch(`/api/route_planner?start_lat=${plannerStartCoords.lat}&start_lng=${plannerStartCoords.lng}&end_lat=${plannerEndCoords.lat}&end_lng=${plannerEndCoords.lng}`);
+        const data = await res.json();
+        
+        if (data.success && data.options.length > 0) {
+            let html = "";
+            window.currentPlannerOptions = data.options;
+            
+            data.options.forEach((opt, idx) => {
+                html += `
+                <div class="card" style="padding: 12px; border-left: 4px solid #8b5cf6; cursor: pointer; transition: all 0.2s;" onclick="drawPlannerRoute(${idx})" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-weight: 800; color: #1e293b; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid ${opt.icon}" style="color: #8b5cf6;"></i> ${opt.type}
+                        </div>
+                        <div style="font-weight: 900; color: #3b82f6;">${opt.duration_min} dk</div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px;">
+                        <i class="fa-solid fa-ruler"></i> ${opt.distance_km} km
+                        ${opt.co2_savings > 0 ? ` &nbsp; <i class="fa-solid fa-leaf" style="color:#10b981;"></i> +${opt.co2_savings}g CO2 Tasarrufu` : ''}
+                    </div>
+                    <div style="font-size: 0.8rem; color: #475569; background: #f8fafc; padding: 6px; border-radius: 6px;">
+                        ${opt.details}
+                    </div>
+                </div>
+                `;
+            });
+            document.getElementById('route-results-container').innerHTML = html;
+            
+            // Draw first route
+            drawPlannerRoute(0);
+        } else {
+            document.getElementById('route-results-container').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">Rota bulunamadı. Lütfen daha yakın noktalar seçin.</div>';
+        }
+    } catch (e) {
+        console.error(e);
+        document.getElementById('route-results-container').innerHTML = '<div style="color:#ef4444; padding:10px; text-align:center;">Hesaplama sırasında hata oluştu.</div>';
+    }
+}
+
+function drawPlannerRoute(index) {
+    clearPlannerRoutes();
+    const opt = window.currentPlannerOptions[index];
+    if (!opt || !opt.geometry) return;
+    
+    let latlngs = [];
+    opt.geometry.forEach(coord => {
+        if(Array.isArray(coord) && coord.length >= 2) {
+            latlngs.push([coord[1], coord[0]]); 
+        }
+    });
+    
+    if (latlngs.length > 0) {
+        let color = '#3b82f6';
+        if (opt.id === 'transit') color = '#eab308';
+        if (opt.id === 'bike') color = '#10b981';
+        
+        const line = L.polyline(latlngs, {color: color, weight: 6, opacity: 0.8}).addTo(plannerMap);
+        plannerRouteLines.push(line);
+        plannerMap.fitBounds(line.getBounds(), {padding: [30, 30]});
+    }
+}
+
 // Tab Navigation
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -220,6 +341,9 @@ function switchTab(tabId) {
 
     if (tabId === 'tab-map' && map) {
         setTimeout(() => map.invalidateSize(), 200);
+    } else if (tabId === 'tab-route-planner') {
+        initPlannerMap();
+        setTimeout(() => plannerMap.invalidateSize(), 200);
     } else if (tabId === 'tab-request-stop' && requestMap) {
         setTimeout(() => requestMap.invalidateSize(), 200);
     } else if (tabId === 'tab-calculator') {
