@@ -1150,13 +1150,35 @@ def route_planner():
             best_transit_option = None
             best_score = 999999
 
+            # Hızlı route araması için vektörize (toplu) veri çekimi
+            start_stop_ids = start_stops['stop_id'].astype(str).tolist()
+            end_stop_ids = end_stops['stop_id'].astype(str).tolist()
+            
+            start_routes_map = {sid: set() for sid in start_stop_ids}
+            end_routes_map = {sid: set() for sid in end_stop_ids}
+            
+            st = gtfs_store.stop_times_df
+            trips = gtfs_store.trips_df
+            routes_df = gtfs_store.routes_df
+            
+            if st is not None and trips is not None and routes_df is not None:
+                all_ids = start_stop_ids + end_stop_ids
+                st_filtered = st[st['stop_id'].astype(str).isin(all_ids)]
+                merged = st_filtered.merge(trips, on='trip_id').merge(routes_df, on='route_id')
+                for _, row in merged.iterrows():
+                    sid = str(row['stop_id'])
+                    code = str(row.get('route_short_name', '')).strip()
+                    if code:
+                        if sid in start_routes_map: start_routes_map[sid].add(code)
+                        if sid in end_routes_map: end_routes_map[sid].add(code)
+
             for _, s_stop in start_stops.iterrows():
                 for _, e_stop in end_stops.iterrows():
-                    s_id = s_stop['stop_id']
-                    e_id = e_stop['stop_id']
+                    s_id = str(s_stop['stop_id'])
+                    e_id = str(e_stop['stop_id'])
 
-                    s_routes = [r['code'] for r in _get_routes_at_stop(s_id)]
-                    e_routes = [r['code'] for r in _get_routes_at_stop(e_id)]
+                    s_routes = start_routes_map.get(s_id, set())
+                    e_routes = end_routes_map.get(e_id, set())
 
                     common_routes = set(s_routes) & set(e_routes)
                     if common_routes:
