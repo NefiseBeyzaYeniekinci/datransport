@@ -1229,7 +1229,7 @@ def route_planner():
                     try:
                         coords_str = f"{float(s_stop['stop_lon'])},{float(s_stop['stop_lat'])};{float(e_stop['stop_lon'])},{float(e_stop['stop_lat'])}"
                         osrm_bus_url = f"http://router.project-osrm.org/route/v1/driving/{coords_str}?overview=full&geometries=geojson"
-                        resp = requests.get(osrm_bus_url, timeout=2)
+                        resp = requests.get(osrm_bus_url, timeout=4)
                         data = resp.json()
                         if data.get("code") == "Ok":
                             bus_geometry = data["routes"][0]["geometry"]["coordinates"]
@@ -1290,7 +1290,7 @@ def route_planner():
             try:
                 coords_str = f"{best_s_bike['lng']},{best_s_bike['lat']};{best_e_bike['lng']},{best_e_bike['lat']}"
                 osrm_bike_url = f"http://router.project-osrm.org/route/v1/bicycle/{coords_str}?overview=full&geometries=geojson"
-                resp = requests.get(osrm_bike_url, timeout=2)
+                resp = requests.get(osrm_bike_url, timeout=4)
                 data = resp.json()
                 if data.get("code") == "Ok":
                     bike_geometry = data["routes"][0]["geometry"]["coordinates"]
