@@ -1122,7 +1122,8 @@ def route_planner():
             if data.get("code") == "Ok":
                 route = data["routes"][0]
                 dist_km = route["distance"] / 1000.0
-                duration_min = route["duration"] / 60.0
+                # OSRM public foot profile bazen hatali sure dondurebilir, 5 km/s hiza gore hesaplayalim:
+                duration_min = (dist_km / 5.0) * 60.0
                 
                 options.append({
                     "id": "walk",
@@ -1172,6 +1173,8 @@ def route_planner():
                         if sid in start_routes_map: start_routes_map[sid].add(code)
                         if sid in end_routes_map: end_routes_map[sid].add(code)
 
+            transit_options_list = []
+            
             for _, s_stop in start_stops.iterrows():
                 for _, e_stop in end_stops.iterrows():
                     s_id = str(s_stop['stop_id'])
@@ -1181,8 +1184,7 @@ def route_planner():
                     e_routes = end_routes_map.get(e_id, set())
 
                     common_routes = set(s_routes) & set(e_routes)
-                    if common_routes:
-                        route_code = list(common_routes)[0]
+                    for route_code in common_routes:
                         walk_start_min = (s_stop['dist_start'] / 5.0) * 60
                         walk_end_min = (e_stop['dist_end'] / 5.0) * 60
                         
@@ -1191,29 +1193,49 @@ def route_planner():
 
                         total_time = walk_start_min + bus_time_min + walk_end_min
 
-                        if total_time < best_score:
-                            best_score = total_time
-                            best_transit_option = {
-                                "id": "transit",
-                                "type": f"Toplu Taşıma ({route_code})",
-                                "icon": "fa-bus",
-                                "duration_min": round(total_time),
-                                "distance_km": round(s_stop['dist_start'] + bus_dist + e_stop['dist_end'], 2),
-                                "co2_emission": round(bus_dist * 0.28, 2),
-                                "co2_savings": round((s_stop['dist_start'] + bus_dist + e_stop['dist_end']) * 0.22 - (bus_dist * 0.28), 2),
-                                "geometry": [
-                                    [start_lng, start_lat],
-                                    [float(s_stop['stop_lon']), float(s_stop['stop_lat'])],
-                                    [float(e_stop['stop_lon']), float(e_stop['stop_lat'])],
-                                    [end_lng, end_lat]
-                                ],
-                                "details": f"{s_stop['stop_name']} durağına yürü, {route_code} hattına bin, {e_stop['stop_name']} durağında in."
-                            }
+                        transit_options_list.append({
+                            "route_code": route_code,
+                            "total_time": total_time,
+                            "s_stop": s_stop,
+                            "e_stop": e_stop,
+                            "bus_dist": bus_dist
+                        })
 
-            if best_transit_option:
-                if best_transit_option["co2_savings"] < 0:
-                    best_transit_option["co2_savings"] = 0
-                options.append(best_transit_option)
+            if transit_options_list:
+                transit_options_list.sort(key=lambda x: x['total_time'])
+                
+                seen_routes = set()
+                top_transits = []
+                for t in transit_options_list:
+                    if t['route_code'] not in seen_routes:
+                        seen_routes.add(t['route_code'])
+                        top_transits.append(t)
+                        if len(top_transits) >= 3:
+                            break
+                
+                for i, t in enumerate(top_transits):
+                    s_stop = t['s_stop']
+                    e_stop = t['e_stop']
+                    co2_sav = (s_stop['dist_start'] + t['bus_dist'] + e_stop['dist_end']) * 0.22 - (t['bus_dist'] * 0.28)
+                    if co2_sav < 0: co2_sav = 0
+                    
+                    options.append({
+                        "id": f"transit_{i}",
+                        "type": f"Toplu Taşıma ({t['route_code']})" if i == 0 else f"Alternatif: {t['route_code']}",
+                        "icon": "fa-bus",
+                        "duration_min": round(t['total_time']),
+                        "distance_km": round(s_stop['dist_start'] + t['bus_dist'] + e_stop['dist_end'], 2),
+                        "co2_emission": round(t['bus_dist'] * 0.28, 2),
+                        "co2_savings": round(co2_sav, 2),
+                        "geometry": [
+                            [start_lng, start_lat],
+                            [float(s_stop['stop_lon']), float(s_stop['stop_lat'])],
+                            [float(e_stop['stop_lon']), float(e_stop['stop_lat'])],
+                            [end_lng, end_lat]
+                        ],
+                        "details": f"{s_stop['stop_name']} durağına yürü, {t['route_code']} hattına bin, {e_stop['stop_name']} durağında in."
+                    })
+
 
         # 3. GaziBis Rotası (Heuristik)
         best_bike_option = None
